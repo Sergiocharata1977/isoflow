@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import LoginPage from "@/pages/auth/login";
-import { initializeData } from "@/data/initial-data";
 import {
   ChevronDown,
   ChevronRight,
@@ -25,15 +24,36 @@ import {
   Star,
   Calendar,
   Bell,
+  UserCircle,
+  MessageSquare,
+  LineChart,
 } from "lucide-react";
 
-// Lazy loaded components
-const NoticiasListing = React.lazy(() =>
-  import("@/components/noticias/NoticiasListing")
-);
-const MejorasListing = React.lazy(() =>
-  import("@/components/mejoras/MejorasListing")
-);
+// Lazy loaded components with preload
+const NoticiasListing = React.lazy(() => {
+  const component = import("@/components/noticias/NoticiasListing");
+  component.catch((error) =>
+    console.error("Error cargando NoticiasListing:", error)
+  );
+  return component;
+});
+
+const CalendarView = React.lazy(() => {
+  const component = import("@/components/calendar/CalendarView");
+  component.catch((error) =>
+    console.error("Error cargando CalendarView:", error)
+  );
+  return component;
+});
+
+const MejorasListing = React.lazy(() => {
+  const component = import("@/components/mejoras/MejorasListing");
+  component.catch((error) =>
+    console.error("Error cargando MejorasListing:", error)
+  );
+  return component;
+});
+
 const MejorasDashboard = React.lazy(() =>
   import("@/components/mejoras/MejorasDashboard")
 );
@@ -73,17 +93,14 @@ const EncuestasListing = React.lazy(() =>
 const UsuariosListing = React.lazy(() =>
   import("@/components/usuarios/UsuariosListing")
 );
-const CalendarView = React.lazy(() =>
-  import("@/components/calendar/CalendarView")
-);
 const PuntosNormaListing = React.lazy(() =>
   import("@/components/norma/PuntosNormaListing")
 );
 
 // Loading component
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center h-full min-h-[400px]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  <div className="flex items-center justify-center h-full w-full">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
   </div>
 );
 
@@ -99,21 +116,25 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("Component Error:", error, errorInfo);
+    console.error("Error en componente:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-6 text-center">
-          <X className="h-12 w-12 text-destructive mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Algo salió mal</h2>
-          <p className="text-muted-foreground mb-4">
-            Ha ocurrido un error al cargar este componente.
+        <div className="flex flex-col items-center justify-center h-64 p-4">
+          <h2 className="text-xl font-semibold text-red-500 mb-2">
+            Algo salió mal
+          </h2>
+          <p className="text-gray-600 text-center mb-4">
+            {this.state.error?.message || "Ha ocurrido un error inesperado"}
           </p>
           <Button
             variant="outline"
-            onClick={() => this.setState({ hasError: false })}
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
           >
             Intentar de nuevo
           </Button>
@@ -186,55 +207,63 @@ function App() {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedSection, setSelectedSection] = useState("noticias");
-  const [expandedGroups, setExpandedGroups] = useState([
-    "rrhh",
-    "procesos",
-    "satisfaccion",
-  ]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [expandedGroups, setExpandedGroups] = useState(["rrhh", "procesos"]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mejoras, setMejoras] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    try {
-      // Initialize sample data
-      initializeData();
-
-      // Load mejoras data
-      const savedMejoras = localStorage.getItem("mejoras");
-      if (savedMejoras) {
-        setMejoras(JSON.parse(savedMejoras));
+    // Solo manejar el resize y el estado de carga
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsMobileMenuOpen(false);
       }
+    };
 
-      const handleResize = () => {
-        setIsMobile(window.innerWidth < 768);
-        if (window.innerWidth >= 768) {
-          setIsMobileMenuOpen(false);
-        }
-      };
+    window.addEventListener("resize", handleResize);
+    setIsLoading(false);
 
-      window.addEventListener("resize", handleResize);
-      setIsLoading(false);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-      return () => window.removeEventListener("resize", handleResize);
-    } catch (error) {
-      console.error("Error initializing app:", error);
-      toast({
-        title: "Error",
-        description: "Hubo un problema al inicializar la aplicación",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
+  // Precarga de componentes principales
+  useEffect(() => {
+    const preloadMainComponents = async () => {
+      try {
+        // Precargar componentes principales
+        const componentsToPreload = [
+          import("@/components/noticias/NoticiasListing"),
+          import("@/components/calendar/CalendarView"),
+          import("@/components/mejoras/MejorasListing"),
+        ];
+
+        await Promise.all(componentsToPreload);
+      } catch (error) {
+        console.error("Error al precargar componentes:", error);
+      }
+    };
+
+    preloadMainComponents();
   }, []);
 
   const toggleGroup = (groupId) => {
-    setExpandedGroups((prev) =>
-      prev.includes(groupId)
-        ? prev.filter((id) => id !== groupId)
-        : [...prev, groupId]
+    setExpandedGroups((prevGroups) =>
+      prevGroups.includes(groupId)
+        ? prevGroups.filter((id) => id !== groupId)
+        : [...prevGroups, groupId]
     );
+  };
+
+  const handleSectionChange = (sectionId) => {
+    setIsLoading(true);
+    setSelectedSection(sectionId);
+    if (isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+    // Simular tiempo de carga mínimo para mejor UX
+    setTimeout(() => setIsLoading(false), 300);
   };
 
   const sections = [
@@ -338,10 +367,7 @@ function App() {
             if (isGroup) {
               toggleGroup(section.id);
             } else {
-              setSelectedSection(section.id);
-              if (isMobile) {
-                setIsMobileMenuOpen(false);
-              }
+              handleSectionChange(section.id);
             }
           }}
         >
@@ -371,10 +397,7 @@ function App() {
                       : "text-gray-300 hover:text-white hover:bg-gray-800"
                   }`}
                   onClick={() => {
-                    setSelectedSection(item.id);
-                    if (isMobile) {
-                      setIsMobileMenuOpen(false);
-                    }
+                    handleSectionChange(item.id);
                   }}
                 >
                   <ItemIcon className="mr-2 h-4 w-4" />
@@ -390,54 +413,97 @@ function App() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingSpinner />;
+      return (
+        <div className="flex items-center justify-center h-full">
+          <LoadingSpinner />
+        </div>
+      );
     }
 
     return (
       <ErrorBoundary>
-        <Suspense fallback={<LoadingSpinner />}>
-          {(() => {
-            switch (selectedSection) {
-              case "noticias":
-                return <NoticiasListing />;
-              case "calendario":
-                return <CalendarView />;
-              case "mejoras":
-                return <MejorasListing />;
-              case "personal":
-                return <PersonalListing />;
-              case "departamentos":
-                return <DepartamentosListing />;
-              case "puestos":
-                return <PuestosListing />;
-              case "procesos":
-                return <ProcesosListing />;
-              case "objetivos":
-                return <ObjetivosListing2 />;
-              case "indicadores":
-                return <IndicadoresListing2 />;
-              case "mediciones":
-                return <MedicionesListing2 />;
-              case "documentos":
-                return <DocumentosListing />;
-              case "puntosnorma":
-                return <PuntosNormaListing />;
-              case "auditorias":
-                return <AuditoriasListing />;
-              default:
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-full">
+              <LoadingSpinner />
+            </div>
+          }
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="w-full"
+          >
+            {(() => {
+              try {
+                switch (selectedSection) {
+                  case "noticias":
+                    return <NoticiasListing />;
+                  case "calendario":
+                    return <CalendarView />;
+                  case "mejoras":
+                    return <MejorasListing />;
+                  case "personal":
+                    return <PersonalListing />;
+                  case "departamentos":
+                    return <DepartamentosListing />;
+                  case "puestos":
+                    return <PuestosListing />;
+                  case "procesos":
+                    return <ProcesosListing />;
+                  case "objetivos":
+                    return <ObjetivosListing2 />;
+                  case "indicadores":
+                    return <IndicadoresListing2 />;
+                  case "mediciones":
+                    return <MedicionesListing2 />;
+                  case "documentos":
+                    return <DocumentosListing />;
+                  case "puntosnorma":
+                    return <PuntosNormaListing />;
+                  case "auditorias":
+                    return <AuditoriasListing />;
+                  default:
+                    return (
+                      <div className="flex items-center justify-center h-64">
+                        <p className="text-muted-foreground">
+                          Seleccione una sección del menú
+                        </p>
+                      </div>
+                    );
+                }
+              } catch (error) {
+                console.error("Error al renderizar contenido:", error);
                 return (
-                  <div className="flex items-center justify-center h-64">
-                    <p className="text-muted-foreground">
-                      Seleccione una sección del menú
+                  <div className="flex flex-col items-center justify-center h-64">
+                    <p className="text-red-500 mb-2">
+                      Error al cargar el contenido
                     </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.location.reload()}
+                    >
+                      Recargar página
+                    </Button>
                   </div>
                 );
-            }
-          })()}
+              }
+            })()}
+          </motion.div>
         </Suspense>
       </ErrorBoundary>
     );
   };
+
+  if (!isAuthenticated) {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <LoginPage onLogin={() => setIsAuthenticated(true)} />
+        <Toaster />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -445,7 +511,7 @@ function App() {
         {/* Mobile Menu Button */}
         {isMobile && (
           <button
-            className="fixed top-4 left-4 z-50 p-2 bg-background rounded-lg border border-border"
+            className="fixed top-4 left-4 z-50 p-2 bg-background rounded-lg border border-border shadow-lg"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? (
@@ -462,8 +528,8 @@ function App() {
           animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : false}
           transition={{ type: "spring", damping: 20 }}
           className={`${
-            isMobile ? `fixed inset-y-0 left-0 z-40 w-64` : "w-64"
-          } border-r border-gray-700 bg-black p-4`}
+            isMobile ? "fixed inset-y-0 left-0 z-40 w-64 shadow-xl" : "w-64"
+          } border-r border-gray-700 bg-black p-4 overflow-y-auto`}
         >
           <div className="space-y-2">{sections.map(renderMenuItem)}</div>
         </motion.div>
@@ -477,9 +543,12 @@ function App() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Header sin notificaciones */}
-          <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-end">
-            {/* Aquí antes estaba NotificationCenter, ahora está vacío */}
+          {/* Header */}
+          <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+            <h1 className="text-xl font-semibold">
+              {sections.find((s) => s.id === selectedSection)?.title ||
+                "Dashboard"}
+            </h1>
           </div>
 
           {/* Content area */}

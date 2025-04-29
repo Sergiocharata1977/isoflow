@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
+import { authenticateUser } from "@/services/userService";
 
 function LoginPage({ onLogin }) {
   const { toast } = useToast();
@@ -13,7 +14,7 @@ function LoginPage({ onLogin }) {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    rememberMe: localStorage.getItem("rememberMe") === "true"
+    rememberMe: localStorage.getItem("rememberMe") === "true",
   });
 
   // Load saved credentials
@@ -21,9 +22,9 @@ function LoginPage({ onLogin }) {
     if (localStorage.getItem("rememberMe") === "true") {
       const savedEmail = localStorage.getItem("savedEmail");
       if (savedEmail) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          email: savedEmail
+          email: savedEmail,
         }));
       }
     }
@@ -35,9 +36,10 @@ function LoginPage({ onLogin }) {
     setError("");
 
     try {
-      // Validate credentials
-      if ((formData.email === "admin" && formData.password === "admin")) {
-        // Save preferences if "remember me" is checked
+      // Autenticación real con la base de datos
+      const result = await authenticateUser(formData.email, formData.password);
+      if (result.success) {
+        // Guardar preferencias si "recordar sesión" está activado
         if (formData.rememberMe) {
           localStorage.setItem("rememberMe", "true");
           localStorage.setItem("savedEmail", formData.email);
@@ -46,25 +48,18 @@ function LoginPage({ onLogin }) {
           localStorage.removeItem("savedEmail");
         }
 
-        onLogin({
-          name: "Administrador",
-          email: formData.email,
-          role: "admin"
-        });
-
+        onLogin(result.user);
         toast({
           title: "Inicio de sesión exitoso",
-          description: "Bienvenido al sistema"
+          description: `Bienvenido, ${result.user.full_name}`,
         });
-      } else {
-        throw new Error("Credenciales incorrectas");
       }
     } catch (error) {
       setError("Usuario o contraseña incorrectos");
       toast({
         title: "Error de autenticación",
         description: "Usuario o contraseña incorrectos",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -73,23 +68,24 @@ function LoginPage({ onLogin }) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side image */}
+      {/* Imagen a la derecha */}
       <div className="hidden lg:block lg:w-1/2 relative">
-        <img  
+        <img
           className="absolute inset-0 w-full h-full object-cover"
           alt="Modern office with people working"
-         src="https://images.unsplash.com/photo-1607615896122-6c919f897e55" />
+          src="https://images.unsplash.com/photo-1607615896122-6c919f897e55"
+        />
       </div>
 
-      {/* Right side form */}
+      {/* Formulario a la izquierda */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md space-y-8"
         >
           <div className="text-center">
-            <img  
+            <img
               src="https://images.unsplash.com/photo-1485531865381-286666aa80a9"
               alt="Company Logo"
               className="mx-auto h-16 w-auto mb-6"
@@ -119,7 +115,9 @@ function LoginPage({ onLogin }) {
               <Input
                 id="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 required
                 className="w-full"
                 disabled={isLoading}
@@ -133,7 +131,9 @@ function LoginPage({ onLogin }) {
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 required
                 className="w-full"
                 disabled={isLoading}
@@ -148,20 +148,21 @@ function LoginPage({ onLogin }) {
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   checked={formData.rememberMe}
-                  onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rememberMe: e.target.checked })
+                  }
                   disabled={isLoading}
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-muted-foreground"
+                >
                   Recordar sesión
                 </label>
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <span className="animate-spin mr-2">⭮</span>
