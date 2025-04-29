@@ -1,0 +1,32 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# JS files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# Config files
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.config.js text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Style files
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+
+# HTML files
+*.html text eol=lf
+*.htm text eol=lf
+
+# Special files
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.env.* text eol=lf 
