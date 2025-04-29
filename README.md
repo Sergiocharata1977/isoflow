@@ -78,3 +78,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 Nombre del Equipo - [@twitter_handle](https://twitter.com/twitter_handle)
 
 Link del Proyecto: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+
+---
+
+Despliegue automático verificado: 2024-05-08
