@@ -29,11 +29,12 @@ jobs:
       - name: 📂 Sync files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ftp://77.37.127.222:21
-          username: u341703372.iso9001late4.com.ar
-          password: Charata19770305
+          server: ${{ secrets.IP }}
+          username: ${{ secrets.USUARIO }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.PUERTOFTP }}
           local-dir: ./dist/
-          server-dir: /public_html/
+          server-dir: ${{ secrets.FTP_DIR }}
           dangerous-clean-slate: true
           exclude: |
             **/.git*
