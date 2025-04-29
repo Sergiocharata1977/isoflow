@@ -1,3 +1,5 @@
+# ⚡️ Prueba de despliegue automático 2024-05-08
+
 # Sistema de Gestión de Calidad ISO 9001
 
 Sistema web para la gestión de calidad, incluyendo objetivos, procesos, indicadores y mediciones.
