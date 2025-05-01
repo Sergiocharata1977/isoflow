@@ -1,133 +1,84 @@
-# Sistema de Gestión de Usuarios
+# ⚡️ Prueba de despliegue automático 2024-05-08
 
-Sistema de gestión de usuarios con autenticación y roles, utilizando una base de datos Turso.
+# Sistema de Gestión de Calidad ISO 9001
 
-## Requisitos Previos
+Sistema web para la gestión de calidad, incluyendo objetivos, procesos, indicadores y mediciones.
 
-- Node.js (v16 o superior)
-- npm o yarn
-- Cuenta en Turso para la base de datos
+## Estado del Despliegue
 
-## Configuración
+🚀 Última prueba de despliegue: 28 de abril de 2024
 
-1. Clonar el repositorio:
+**Prueba de despliegue automático vía webhook: OK**
+
+## Características
+
+- Gestión de Objetivos de Calidad
+- Seguimiento de Procesos
+- Indicadores y Mediciones
+- Interfaz moderna y responsiva
+- Sistema de búsqueda y filtrado
+
+## Tecnologías
+
+- React
+- Vite
+- Tailwind CSS
+- Shadcn/ui
+
+## Instalación
 
 ```bash
-git clone [url-del-repositorio]
-cd [nombre-del-directorio]
-```
+# Clonar el repositorio
+git clone <URL_DEL_REPOSITORIO>
+cd <NOMBRE_DEL_PROYECTO>
 
-2. Instalar dependencias:
-
-```bash
+# Instalar dependencias
 npm install
-```
 
-3. Configurar variables de entorno:
-   Crear un archivo `.env` en la raíz del proyecto con:
+# Iniciar en modo desarrollo
+npm run dev
 
-```
-PORT=3001
-NODE_ENV=development
+# Construir para producción
+npm run build
 ```
 
 ## Estructura del Proyecto
 
 ```
 src/
-├── components/     # Componentes React
-├── config/         # Configuraciones
-├── server/         # Backend Express
-│   ├── api/        # Lógica de API
-│   └── routes/     # Rutas Express
-├── services/       # Servicios
-└── styles/         # Estilos
+  ├── components/     # Componentes React
+  ├── pages/         # Páginas de la aplicación
+  ├── services/      # Servicios y APIs
+  └── styles/        # Estilos globales
 ```
 
-## Iniciar el Proyecto
+## Despliegue
 
-1. Iniciar el servidor backend:
+El proyecto está configurado para desplegarse automáticamente en Hostinger mediante GitHub Actions.
 
-```bash
-npm run server
-```
+## Guías
 
-2. Iniciar el frontend:
+- [Guía de Despliegue](./DEPLOYMENT_GUIDE.md)
+- [Registro de Cambios](./CHANGELOG.md)
 
-```bash
-npm run dev
-```
+## Contribución
 
-El frontend correrá en `http://localhost:3002` y el backend en `http://localhost:3001`.
+1. Fork el proyecto
+2. Crear una rama para tu característica (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abrir un Pull Request
 
-## Endpoints API
+## Licencia
 
-### Usuarios
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
 
-- `GET /api/usuarios` - Listar todos los usuarios
-- `POST /api/usuarios` - Crear nuevo usuario
-- `PUT /api/usuarios/:id` - Actualizar usuario
-- `DELETE /api/usuarios/:id` - Eliminar usuario
-- `GET /api/usuarios/test-connection` - Probar conexión a la base de datos
+## Contacto
 
-### Salud
+Nombre del Equipo - [@twitter_handle](https://twitter.com/twitter_handle)
 
-- `GET /health` - Verificar estado del servidor
+Link del Proyecto: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
 
-## Base de Datos
+---
 
-El sistema utiliza Turso como base de datos. La configuración se encuentra en `src/config/database.js`.
-
-### Estructura de la Tabla Users
-
-```sql
-CREATE TABLE users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
-  full_name TEXT NOT NULL,
-  role TEXT NOT NULL,
-  department TEXT,
-  position TEXT,
-  is_active BOOLEAN DEFAULT true,
-  last_login DATETIME,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Manejo de Errores
-
-El sistema implementa un manejo de errores robusto tanto en el frontend como en el backend. Los errores se registran en la consola y se devuelven al cliente con mensajes descriptivos.
-
-## Monitoreo
-
-El sistema incluye:
-
-- Logging de todas las peticiones HTTP
-- Monitoreo de la conexión a la base de datos
-- Endpoint de salud para verificar el estado del servidor
-
-## Seguridad
-
-- Las contraseñas se almacenan hasheadas usando bcrypt
-- Implementación de CORS
-- Validación de datos en el backend
-- Manejo seguro de tokens de autenticación
-
-## Desarrollo
-
-Para desarrollo, se recomienda:
-
-1. Usar el modo desarrollo de Vite
-2. Mantener el servidor backend corriendo
-3. Utilizar las herramientas de desarrollo del navegador para debugging
-
-## Producción
-
-Para despliegue en producción:
-
-1. Configurar `NODE_ENV=production`
-2. Construir el frontend: `npm run build`
-3. Configurar un servidor web para servir los archivos estáticos
-4. Configurar un proxy inverso para el backend
+Despliegue automático verificado: 2024-05-08
