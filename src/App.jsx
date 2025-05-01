@@ -28,34 +28,17 @@ import {
   MessageSquare,
   LineChart,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Lazy loaded components with preload
-const NoticiasListing = React.lazy(() => {
-  const component = import("@/components/noticias/NoticiasListing");
-  component.catch((error) =>
-    console.error("Error cargando NoticiasListing:", error)
-  );
-  return component;
-});
-
-const CalendarView = React.lazy(() => {
-  const component = import("@/components/calendar/CalendarView");
-  component.catch((error) =>
-    console.error("Error cargando CalendarView:", error)
-  );
-  return component;
-});
-
-const MejorasListing = React.lazy(() => {
-  const component = import("@/components/mejoras/MejorasListing");
-  component.catch((error) =>
-    console.error("Error cargando MejorasListing:", error)
-  );
-  return component;
-});
-
-const MejorasDashboard = React.lazy(() =>
-  import("@/components/mejoras/MejorasDashboard")
+// Lazy loaded components
+const NoticiasListing = React.lazy(() =>
+  import("@/components/noticias/NoticiasListing")
+);
+const CalendarView = React.lazy(() =>
+  import("@/components/calendar/CalendarView")
+);
+const MejorasListing = React.lazy(() =>
+  import("@/components/mejoras/MejorasListing")
 );
 const PersonalListing = React.lazy(() =>
   import("@/components/personal/PersonalListing")
@@ -81,20 +64,14 @@ const MedicionesListing2 = React.lazy(() =>
 const DocumentosListing = React.lazy(() =>
   import("@/components/documentos/DocumentosListing")
 );
+const PuntosNormaListing = React.lazy(() =>
+  import("@/components/norma/PuntosNormaListing")
+);
 const AuditoriasListing = React.lazy(() =>
   import("@/components/auditorias/AuditoriasListing")
 );
-const TicketsListing = React.lazy(() =>
-  import("@/components/tickets/TicketsListing")
-);
-const EncuestasListing = React.lazy(() =>
-  import("@/components/encuestas/EncuestasListing")
-);
 const UsuariosListing = React.lazy(() =>
   import("@/components/usuarios/UsuariosListing")
-);
-const PuntosNormaListing = React.lazy(() =>
-  import("@/components/norma/PuntosNormaListing")
 );
 
 // Loading component
@@ -117,6 +94,13 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Error en componente:", error, errorInfo);
+  }
+
+  componentDidMount() {
+    // Limpiar cualquier error pendiente al montar el componente
+    if (this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
   }
 
   render() {
@@ -204,16 +188,14 @@ const api = {
 };
 
 function App() {
-  const { toast } = useToast();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [selectedSection, setSelectedSection] = useState("noticias");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState(["rrhh", "procesos"]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, logout } = useAuth();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState("noticias");
+  const [expandedGroups, setExpandedGroups] = useState([]);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Solo manejar el resize y el estado de carga
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
@@ -223,47 +205,22 @@ function App() {
     };
 
     window.addEventListener("resize", handleResize);
-    setIsLoading(false);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Precarga de componentes principales
-  useEffect(() => {
-    const preloadMainComponents = async () => {
-      try {
-        // Precargar componentes principales
-        const componentsToPreload = [
-          import("@/components/noticias/NoticiasListing"),
-          import("@/components/calendar/CalendarView"),
-          import("@/components/mejoras/MejorasListing"),
-        ];
-
-        await Promise.all(componentsToPreload);
-      } catch (error) {
-        console.error("Error al precargar componentes:", error);
-      }
-    };
-
-    preloadMainComponents();
-  }, []);
-
   const toggleGroup = (groupId) => {
-    setExpandedGroups((prevGroups) =>
-      prevGroups.includes(groupId)
-        ? prevGroups.filter((id) => id !== groupId)
-        : [...prevGroups, groupId]
+    setExpandedGroups((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId]
     );
   };
 
   const handleSectionChange = (sectionId) => {
-    setIsLoading(true);
     setSelectedSection(sectionId);
     if (isMobile) {
       setIsMobileMenuOpen(false);
     }
-    // Simular tiempo de carga mínimo para mejor UX
-    setTimeout(() => setIsLoading(false), 300);
   };
 
   const sections = [
@@ -287,6 +244,11 @@ function App() {
       title: "Recursos Humanos",
       icon: Users,
       items: [
+        {
+          id: "usuarios",
+          title: "Usuarios",
+          icon: UserCircle,
+        },
         {
           id: "personal",
           title: "Personal",
@@ -396,9 +358,7 @@ function App() {
                       ? "bg-green-500 hover:bg-green-600 text-white"
                       : "text-gray-300 hover:text-white hover:bg-gray-800"
                   }`}
-                  onClick={() => {
-                    handleSectionChange(item.id);
-                  }}
+                  onClick={() => handleSectionChange(item.id)}
                 >
                   <ItemIcon className="mr-2 h-4 w-4" />
                   <span className="flex-1 text-left">{item.title}</span>
@@ -411,154 +371,119 @@ function App() {
     );
   };
 
+  if (!user) {
+    return <LoginPage />;
+  }
+
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <LoadingSpinner />
-        </div>
-      );
+    let Component;
+    switch (selectedSection) {
+      case "noticias":
+        Component = NoticiasListing;
+        break;
+      case "calendario":
+        Component = CalendarView;
+        break;
+      case "mejoras":
+        Component = MejorasListing;
+        break;
+      case "personal":
+        Component = PersonalListing;
+        break;
+      case "departamentos":
+        Component = DepartamentosListing;
+        break;
+      case "puestos":
+        Component = PuestosListing;
+        break;
+      case "procesos":
+        Component = ProcesosListing;
+        break;
+      case "objetivos":
+        Component = ObjetivosListing2;
+        break;
+      case "indicadores":
+        Component = IndicadoresListing2;
+        break;
+      case "mediciones":
+        Component = MedicionesListing2;
+        break;
+      case "documentos":
+        Component = DocumentosListing;
+        break;
+      case "puntosnorma":
+        Component = PuntosNormaListing;
+        break;
+      case "auditorias":
+        Component = AuditoriasListing;
+        break;
+      case "usuarios":
+        Component = UsuariosListing;
+        break;
+      default:
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">
+              Seleccione una sección del menú
+            </p>
+          </div>
+        );
     }
 
     return (
       <ErrorBoundary>
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center h-full">
-              <LoadingSpinner />
-            </div>
-          }
-        >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="w-full"
-          >
-            {(() => {
-              try {
-                switch (selectedSection) {
-                  case "noticias":
-                    return <NoticiasListing />;
-                  case "calendario":
-                    return <CalendarView />;
-                  case "mejoras":
-                    return <MejorasListing />;
-                  case "personal":
-                    return <PersonalListing />;
-                  case "departamentos":
-                    return <DepartamentosListing />;
-                  case "puestos":
-                    return <PuestosListing />;
-                  case "procesos":
-                    return <ProcesosListing />;
-                  case "objetivos":
-                    return <ObjetivosListing2 />;
-                  case "indicadores":
-                    return <IndicadoresListing2 />;
-                  case "mediciones":
-                    return <MedicionesListing2 />;
-                  case "documentos":
-                    return <DocumentosListing />;
-                  case "puntosnorma":
-                    return <PuntosNormaListing />;
-                  case "auditorias":
-                    return <AuditoriasListing />;
-                  default:
-                    return (
-                      <div className="flex items-center justify-center h-64">
-                        <p className="text-muted-foreground">
-                          Seleccione una sección del menú
-                        </p>
-                      </div>
-                    );
-                }
-              } catch (error) {
-                console.error("Error al renderizar contenido:", error);
-                return (
-                  <div className="flex flex-col items-center justify-center h-64">
-                    <p className="text-red-500 mb-2">
-                      Error al cargar el contenido
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => window.location.reload()}
-                    >
-                      Recargar página
-                    </Button>
-                  </div>
-                );
-              }
-            })()}
-          </motion.div>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Component />
         </Suspense>
       </ErrorBoundary>
     );
   };
 
-  if (!isAuthenticated) {
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <LoginPage onLogin={() => setIsAuthenticated(true)} />
-        <Toaster />
-      </Suspense>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen overflow-hidden">
-        {/* Mobile Menu Button */}
-        {isMobile && (
-          <button
-            className="fixed top-4 left-4 z-50 p-2 bg-background rounded-lg border border-border shadow-lg"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
-        )}
+    <div className="flex h-screen bg-background">
+      {/* Overlay para móvil */}
+      {isMobile && isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-        {/* Sidebar */}
-        <motion.div
-          initial={isMobile ? { x: -320 } : false}
-          animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : false}
-          transition={{ type: "spring", damping: 20 }}
-          className={`${
-            isMobile ? "fixed inset-y-0 left-0 z-40 w-64 shadow-xl" : "w-64"
-          } border-r border-gray-700 bg-black p-4 overflow-y-auto`}
-        >
-          <div className="space-y-2">{sections.map(renderMenuItem)}</div>
-        </motion.div>
+      {/* Menú lateral */}
+      <motion.div
+        initial={isMobile ? { x: -320 } : false}
+        animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : false}
+        transition={{ type: "spring", damping: 20 }}
+        className={`${
+          isMobile ? "fixed inset-y-0 left-0 z-40 w-64" : "w-64"
+        } border-r border-gray-700 bg-black p-4`}
+      >
+        <div className="space-y-2">{sections.map(renderMenuItem)}</div>
+      </motion.div>
 
-        {/* Main Content */}
-        <motion.div
-          className={`flex-1 overflow-hidden flex flex-col ${
-            isMobile ? "w-full" : ""
-          }`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Header */}
-          <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
-            <h1 className="text-xl font-semibold">
-              {sections.find((s) => s.id === selectedSection)?.title ||
-                "Dashboard"}
-            </h1>
-          </div>
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="h-16 border-b border-border flex items-center justify-between px-4">
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </Button>
+          )}
+        </header>
 
-          {/* Content area */}
-          <div
-            className={`flex-1 overflow-auto p-6 ${isMobile ? "pt-16" : ""}`}
-          >
-            {renderContent()}
-          </div>
-        </motion.div>
+        {/* Área de contenido principal */}
+        <main className="flex-1 overflow-auto p-6">{renderContent()}</main>
       </div>
+
       <Toaster />
     </div>
   );

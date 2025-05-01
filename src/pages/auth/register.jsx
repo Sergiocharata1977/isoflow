@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -6,18 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
+import { registerUser } from "@/services/userService";
+import { useNavigate } from "react-router-dom";
 
 function RegisterPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    full_name: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    department: "",
+    position: ""
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Error",
@@ -26,11 +32,46 @@ function RegisterPage() {
       });
       return;
     }
-    // Aquí iría la lógica de registro
-    toast({
-      title: "Registrando usuario",
-      description: "Procesando su registro..."
-    });
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await registerUser({
+        full_name: formData.full_name,
+        email: formData.email,
+        password: formData.password,
+        department: formData.department,
+        position: formData.position
+      });
+
+      toast({
+        title: "Éxito",
+        description: "Usuario registrado correctamente",
+      });
+
+      // Redirigir al login después de 2 segundos
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+
+    } catch (error) {
+      console.error("Error en el registro:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al registrar el usuario",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,7 +81,8 @@ function RegisterPage() {
         <img 
           className="absolute inset-0 w-full h-full object-cover"
           alt="Campo agrícola al atardecer"
-         src="https://images.unsplash.com/photo-1511846859610-ea7712ac1c3d" />
+          src="https://images.unsplash.com/photo-1511846859610-ea7712ac1c3d" 
+        />
       </div>
 
       {/* Formulario a la derecha */}
@@ -66,14 +108,15 @@ function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre completo</Label>
+              <Label htmlFor="full_name">Nombre completo</Label>
               <Input
-                id="name"
+                id="full_name"
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 required
                 className="w-full"
+                disabled={isLoading}
               />
             </div>
 
@@ -86,6 +129,7 @@ function RegisterPage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 className="w-full"
+                disabled={isLoading}
               />
             </div>
 
@@ -98,6 +142,7 @@ function RegisterPage() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
                 className="w-full"
+                disabled={isLoading}
               />
             </div>
 
@@ -110,11 +155,43 @@ function RegisterPage() {
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
                 className="w-full"
+                disabled={isLoading}
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Registrarse
+            <div className="space-y-2">
+              <Label htmlFor="department">Departamento</Label>
+              <Input
+                id="department"
+                type="text"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="w-full"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="position">Puesto</Label>
+              <Input
+                id="position"
+                type="text"
+                value={formData.position}
+                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                className="w-full"
+                disabled={isLoading}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="animate-spin mr-2">⭮</span>
+                  Registrando...
+                </>
+              ) : (
+                "Registrarse"
+              )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
