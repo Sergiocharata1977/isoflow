@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
 import { authenticateUser } from "@/services/userService";
+import { useAuth } from "@/contexts/AuthContext";
 
-function LoginPage({ onLogin }) {
+function LoginPage() {
+  const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,7 +38,6 @@ function LoginPage({ onLogin }) {
     setError("");
 
     try {
-      // Autenticación real con la base de datos
       const result = await authenticateUser(formData.email, formData.password);
       if (result.success) {
         // Guardar preferencias si "recordar sesión" está activado
@@ -48,13 +49,14 @@ function LoginPage({ onLogin }) {
           localStorage.removeItem("savedEmail");
         }
 
-        onLogin(result.user);
+        login(result.user);
         toast({
           title: "Inicio de sesión exitoso",
           description: `Bienvenido, ${result.user.full_name}`,
         });
       }
     } catch (error) {
+      console.error("Error de autenticación:", error);
       setError("Usuario o contraseña incorrectos");
       toast({
         title: "Error de autenticación",

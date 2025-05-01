@@ -1,4 +1,5 @@
 import turso from "./db.js";
+import bcrypt from "bcryptjs";
 
 async function initializeDatabase() {
   try {
@@ -39,6 +40,7 @@ async function initializeDatabase() {
     });
 
     if (adminExists.rows.length === 0) {
+      const hashedPassword = await bcrypt.hash("admin123", 10);
       await turso.execute({
         sql: `
           INSERT INTO users (
@@ -49,7 +51,7 @@ async function initializeDatabase() {
         args: [
           "admin-" + Date.now(),
           "admin@isoflow.com",
-          "admin123", // Cambiar en producción
+          hashedPassword,
           "Administrador del Sistema",
           "admin",
           true,
