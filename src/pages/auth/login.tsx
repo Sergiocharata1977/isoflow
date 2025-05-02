@@ -1,25 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
 import { authenticateUser } from "../../services/userService";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { useToast } from "../../components/ui/use-toast";
 
-function LoginPage({ onLogin }) {
+interface User {
+  id: string;
+  full_name: string;
+}
+
+interface LoginPageProps {
+  onLogin: (user: User) => void;
+}
+
+interface AuthResult {
+  success: boolean;
+  user: User;
+}
+
+function LoginPage({ onLogin }: LoginPageProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [formData, setFormData] = useState<{
+    email: string;
+    password: string;
+    rememberMe: boolean;
+  }>({
     email: "",
     password: "",
     rememberMe: localStorage.getItem("rememberMe") === "true",
   });
 
-  // Load saved credentials
-  React.useEffect(() => {
-    if (localStorage.getItem("rememberMe") === "true") {
+  useEffect(() => {
+    if (formData.rememberMe) {
       const savedEmail = localStorage.getItem("savedEmail");
       if (savedEmail) {
         setFormData((prev) => ({
@@ -30,16 +47,15 @@ function LoginPage({ onLogin }) {
     }
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      const result = await authenticateUser(formData.email, formData.password);
+      const result: AuthResult = await authenticateUser(formData.email, formData.password);
 
       if (result.success) {
-        // Guardar preferencias si "recordar sesión" está activado
         if (formData.rememberMe) {
           localStorage.setItem("rememberMe", "true");
           localStorage.setItem("savedEmail", formData.email);
@@ -55,19 +71,13 @@ function LoginPage({ onLogin }) {
         });
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.log(error.message);
-
-        setError(error.message ?? "Usuario o contraseña incorrectos");
-      } else {
-        console.log("Error desconocido", error);
-
-        setError("Usuario o contraseña incorrectos");
-      }
-
+      const message =
+        error instanceof Error ? error.message : "Usuario o contraseña incorrectos";
+      console.error(message);
+      setError(message);
       toast({
         title: "Error de autenticación",
-        description: error instanceof Error ? error.message : "Usuario o contraseña incorrectos",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -77,7 +87,6 @@ function LoginPage({ onLogin }) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Imagen a la derecha */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img
           className="absolute inset-0 w-full h-full object-cover"
@@ -86,7 +95,6 @@ function LoginPage({ onLogin }) {
         />
       </div>
 
-      {/* Formulario a la izquierda */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
