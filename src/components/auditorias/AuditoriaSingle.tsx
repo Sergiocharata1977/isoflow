@@ -1,8 +1,7 @@
-
 import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   ArrowLeft,
   ClipboardCheck,
   Pencil,
@@ -11,86 +10,100 @@ import {
   Users,
   Target,
   FileText,
-  Star
 } from "lucide-react";
 import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
+import "jspdf-autotable";
+import { AuditoriaModel } from "@/models/auditoria-model";
 
-function AuditoriaSingle({ auditoria, onBack, onEdit, onDelete }) {
-  const getCalificacionColor = (calificacion) => {
+interface PuntoEvaluado {
+  punto_norma: string;
+  calificacion: string;
+  comentarios: string;
+}
+
+
+interface AuditoriaSingleProps {
+  auditoria: AuditoriaModel;
+  onBack: () => void;
+  onEdit: (auditoria: AuditoriaModel) => void;
+  onDelete: (id: number) => void;
+}
+
+const AuditoriaSingle: React.FC<AuditoriaSingleProps> = ({ auditoria, onBack, onEdit, onDelete }) => {
+  const getCalificacionColor = (calificacion: string): string => {
     switch (calificacion) {
-      case 'Malo':
-        return 'bg-red-100 text-red-800';
-      case 'Regular':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Bueno':
-        return 'bg-green-100 text-green-800';
-      case 'Muy Bueno':
-        return 'bg-blue-100 text-blue-800';
+      case "Malo":
+        return "bg-red-100 text-red-800";
+      case "Regular":
+        return "bg-yellow-100 text-yellow-800";
+      case "Bueno":
+        return "bg-green-100 text-green-800";
+      case "Muy Bueno":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getEstadoColor = (estado) => {
+  const getEstadoColor = (estado: string): string => {
     switch (estado) {
-      case 'Planificada':
-        return 'bg-blue-100 text-blue-800';
-      case 'En Ejecución':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Terminada':
-        return 'bg-green-100 text-green-800';
-      case 'Controlada':
-        return 'bg-purple-100 text-purple-800';
+      case "Planificada":
+        return "bg-blue-100 text-blue-800";
+      case "En Ejecución":
+        return "bg-yellow-100 text-yellow-800";
+      case "Terminada":
+        return "bg-green-100 text-green-800";
+      case "Controlada":
+        return "bg-purple-100 text-purple-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const downloadPDF = () => {
     const doc = new jsPDF();
-    
+
     // Título
     doc.setFontSize(20);
     doc.text(`Auditoría ${auditoria.numero}`, 20, 20);
-    
+
     // Información general
     doc.setFontSize(12);
     doc.text(`Fecha: ${new Date(auditoria.fecha_programada).toLocaleDateString()}`, 20, 35);
     doc.text(`Responsable: ${auditoria.responsable}`, 20, 45);
     doc.text(`Estado: ${auditoria.estado}`, 20, 55);
-    
+
     // Objetivo
-    doc.text('Objetivo:', 20, 70);
+    doc.text("Objetivo:", 20, 70);
     const splitObjective = doc.splitTextToSize(auditoria.objetivo, 170);
     doc.text(splitObjective, 20, 80);
-    
+
     // Procesos evaluados
-    doc.text('Procesos Evaluados:', 20, 100);
+    doc.text("Procesos Evaluados:", 20, 100);
     const splitProcesos = doc.splitTextToSize(auditoria.procesos_evaluar, 170);
     doc.text(splitProcesos, 20, 110);
-    
+
     // Puntos evaluados
-    doc.text('Puntos Evaluados:', 20, 140);
-    
-    const tableData = auditoria.puntos.map(punto => [
+    doc.text("Puntos Evaluados:", 20, 140);
+
+    const tableData = auditoria.puntos.map((punto) => [
       punto.punto_norma,
       punto.calificacion,
-      punto.comentarios
+      punto.comentarios,
     ]);
-    
-    doc.autoTable({
-      startY: 150,
-      head: [['Punto de la Norma', 'Calificación', 'Comentarios']],
-      body: tableData,
-    });
-    
-    // Comentarios finales
-    const finalCommentsY = doc.previousAutoTable.finalY + 20;
-    doc.text('Comentarios Finales:', 20, finalCommentsY);
-    const splitComments = doc.splitTextToSize(auditoria.comentarios_finales || '', 170);
-    doc.text(splitComments, 20, finalCommentsY + 10);
-    
+
+    // doc.autoTable({
+    //   startY: 150,
+    //   head: [["Punto de la Norma", "Calificación", "Comentarios"]],
+    //   body: tableData,
+    // });
+
+    // // Comentarios finales
+    // const finalCommentsY = doc.previousAutoTable.finalY + 20;
+    // doc.text("Comentarios Finales:", 20, finalCommentsY);
+    // const splitComments = doc.splitTextToSize(auditoria.comentarios_finales || "", 170);
+    // doc.text(splitComments, 20, finalCommentsY + 10);
+
     doc.save(`auditoria_${auditoria.numero}.pdf`);
   };
 
@@ -111,10 +124,13 @@ function AuditoriaSingle({ auditoria, onBack, onEdit, onDelete }) {
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </Button>
-          <Button variant="destructive" onClick={() => {
-            onDelete(auditoria.id);
-            onBack();
-          }}>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              onDelete(auditoria.id!); // Usamos el número como identificador
+              onBack();
+            }}
+          >
             <Trash2 className="mr-2 h-4 w-4" />
             Eliminar
           </Button>
@@ -188,7 +204,9 @@ function AuditoriaSingle({ auditoria, onBack, onEdit, onDelete }) {
                       <Target className="h-5 w-5 text-primary" />
                       <h3 className="font-medium">Punto #{index + 1}</h3>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getCalificacionColor(punto.calificacion)}`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${getCalificacionColor(punto.calificacion)}`}
+                    >
                       {punto.calificacion}
                     </span>
                   </div>
@@ -198,69 +216,29 @@ function AuditoriaSingle({ auditoria, onBack, onEdit, onDelete }) {
                   </div>
                   <div className="mt-2">
                     <p className="font-medium text-sm">Comentarios:</p>
-                    <p className="text-muted-foreground whitespace-pre-line">{punto.comentarios}</p>
+                    <p className="text-muted-foreground">{punto.comentarios}</p>
                   </div>
                 </div>
               ))}
             </div>
           </motion.div>
-        </div>
 
-        {/* Sidebar - 1 columna */}
-        <div className="space-y-6">
-          {/* Resumen */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-card border border-border rounded-lg p-6"
-          >
-            <h2 className="text-lg font-semibold flex items-center mb-4">
-              <Star className="h-5 w-5 mr-2" />
-              Resumen
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Total de Puntos Evaluados</p>
-                <p className="text-2xl font-bold">{auditoria.puntos.length}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Calificaciones</p>
-                <div className="space-y-2 mt-2">
-                  {['Muy Bueno', 'Bueno', 'Regular', 'Malo'].map(cal => {
-                    const count = auditoria.puntos.filter(p => p.calificacion === cal).length;
-                    return (
-                      <div key={cal} className="flex justify-between items-center">
-                        <span className={`px-2 py-1 rounded-full text-xs ${getCalificacionColor(cal)}`}>
-                          {cal}
-                        </span>
-                        <span className="font-medium">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Comentarios Finales */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-card border border-border rounded-lg p-6"
-          >
-            <h2 className="text-lg font-semibold flex items-center mb-4">
-              <FileText className="h-5 w-5 mr-2" />
-              Comentarios Finales
-            </h2>
-            <p className="text-muted-foreground whitespace-pre-line">
-              {auditoria.comentarios_finales || "Sin comentarios finales"}
-            </p>
-          </motion.div>
+          {/* Comentarios finales */}
+          {auditoria.comentarios_finales && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-card border border-border rounded-lg p-6"
+            >
+              <h2 className="text-lg font-semibold mb-2">Comentarios Finales</h2>
+              <p className="text-muted-foreground whitespace-pre-line">{auditoria.comentarios_finales}</p>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default AuditoriaSingle;

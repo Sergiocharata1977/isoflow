@@ -5,43 +5,24 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from "../ui/dialog";
+import { AuditoriaModel, PuntoEvaluadoModel } from "@/models/auditoria-model";
+import { ProcesoModel } from "@/models/proceso-model";
 
-interface PuntoEvaluado {
-  punto_norma: string;
-  calificacion: string;
-  comentarios: string;
-}
-
-interface Auditoria {
-  numero: string;
-  fecha_programada: string;
-  responsable: string;
-  objetivo: string;
-  procesos_evaluar: string;
-  estado: string;
-  puntos: PuntoEvaluado[];
-  comentarios_finales: string;
-}
 
 interface Persona {
   id: number;
   nombre: string;
 }
 
-interface Proceso {
-  id: number;
-  titulo: string;
-}
-
 interface AuditoriaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (auditoria: Auditoria) => void;
-  auditoria?: Auditoria;
+  onSave: (auditoria: AuditoriaModel) => void;
+  auditoria?: AuditoriaModel;
 }
 
 function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalProps) {
-  const [formData, setFormData] = useState<Auditoria>({
+  const [formData, setFormData] = useState<AuditoriaModel>({
     numero: "",
     fecha_programada: "",
     responsable: "",
@@ -57,7 +38,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [procesos, setProcesos] = useState<Proceso[]>(() => {
+  const [procesos, setProcesos] = useState<ProcesoModel[]>(() => {
     const saved = localStorage.getItem("procesos");
     return saved ? JSON.parse(saved) : [];
   });
@@ -104,7 +85,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     }));
   };
 
-  const updatePuntoEvaluado = (index: number, field: keyof PuntoEvaluado, value: string) => {
+  const updatePuntoEvaluado = (index: number, field: keyof PuntoEvaluadoModel, value: string) => {
     setFormData(prev => ({
       ...prev,
       puntos: prev.puntos.map((punto, i) =>
