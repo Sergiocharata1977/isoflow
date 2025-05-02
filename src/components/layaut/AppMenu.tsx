@@ -1,9 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronDown, 
-  ChevronRight, 
+import {
+  ChevronDown,
+  ChevronRight,
   LayoutGrid,
   Calendar,
   ArrowUpCircle,
@@ -14,101 +14,94 @@ import {
   BarChart2,
   Ruler,
   FileText,
-  ClipboardCheck
-} from 'lucide-react';
+  ClipboardCheck,
+  LucideIcon
+} from "lucide-react";
 
-const AppMenu = ({ 
-  isMobile, 
-  isMobileMenuOpen, 
-  selectedSection, 
-  expandedGroups, 
-  toggleGroup, 
-  setSelectedSection, 
-  setIsMobileMenuOpen 
+interface SectionItem {
+  id: string;
+  title: string;
+  icon: LucideIcon;
+}
+
+interface Section extends SectionItem {
+  items?: SectionItem[];
+}
+
+interface AppMenuProps {
+  isMobile: boolean;
+  isMobileMenuOpen: boolean;
+  selectedSection: string;
+  expandedGroups: string[];
+  toggleGroup: (id: string) => void;
+  setSelectedSection: (id: string) => void;
+  setIsMobileMenuOpen: (open: boolean) => void;
+}
+
+const AppMenu: React.FC<AppMenuProps> = ({
+  isMobile,
+  isMobileMenuOpen,
+  selectedSection,
+  expandedGroups,
+  toggleGroup,
+  setSelectedSection,
+  setIsMobileMenuOpen,
 }) => {
-  const sections = [
+  const sections: Section[] = [
     {
       id: "noticias",
       title: "Tablero Central",
-      icon: LayoutGrid
+      icon: LayoutGrid,
     },
     {
       id: "calendario",
       title: "Calendario",
-      icon: Calendar
+      icon: Calendar,
     },
     {
       id: "mejoras",
       title: "Hallazgos y mejoras",
-      icon: ArrowUpCircle
+      icon: ArrowUpCircle,
     },
     {
       id: "rrhh",
       title: "Recursos Humanos",
       icon: Users,
       items: [
-        {
-          id: "personal",
-          title: "Personal",
-          icon: Users
-        },
-        {
-          id: "departamentos",
-          title: "Departamentos",
-          icon: Building2
-        },
-        {
-          id: "puestos",
-          title: "Puestos",
-          icon: Users
-        }
-      ]
+        { id: "personal", title: "Personal", icon: Users },
+        { id: "departamentos", title: "Departamentos", icon: Building2 },
+        { id: "puestos", title: "Puestos", icon: Users },
+      ],
     },
     {
       id: "procesos",
       title: "Procesos",
       icon: ClipboardList,
       items: [
-        {
-          id: "procesos",
-          title: "Procesos",
-          icon: ClipboardList
-        },
-        {
-          id: "objetivos",
-          title: "Objetivos (v2)",
-          icon: Target
-        },
-        {
-          id: "indicadores",
-          title: "Indicadores (v2)",
-          icon: BarChart2
-        },
-        {
-          id: "mediciones",
-          title: "Mediciones (v2)",
-          icon: Ruler
-        }
-      ]
+        { id: "procesos", title: "Procesos", icon: ClipboardList },
+        { id: "objetivos", title: "Objetivos (v2)", icon: Target },
+        { id: "indicadores", title: "Indicadores (v2)", icon: BarChart2 },
+        { id: "mediciones", title: "Mediciones (v2)", icon: Ruler },
+      ],
     },
     {
       id: "documentos",
       title: "Documentos",
-      icon: FileText
+      icon: FileText,
     },
     {
       id: "puntosnorma",
       title: "Puntos de Norma",
-      icon: ClipboardCheck
+      icon: ClipboardCheck,
     },
     {
       id: "auditorias",
       title: "Auditorías",
-      icon: ClipboardCheck
-    }
+      icon: ClipboardCheck,
+    },
   ];
 
-  const renderMenuItem = (section) => {
+  const renderMenuItem = (section: Section) => {
     const isGroup = section.items && section.items.length > 0;
     const isExpanded = expandedGroups.includes(section.id);
     const isActive = !isGroup && selectedSection === section.id;
@@ -118,7 +111,10 @@ const AppMenu = ({
       <div key={section.id} className="mb-1">
         <Button
           variant={isActive ? "default" : "ghost"}
-          className={`w-full justify-start ${isActive ? 'bg-green-500 hover:bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+          className={`w-full justify-start ${isActive
+              ? "bg-green-500 hover:bg-green-600 text-white"
+              : "text-gray-300 hover:text-white hover:bg-gray-800"
+            }`}
           onClick={() => {
             if (isGroup) {
               toggleGroup(section.id);
@@ -132,26 +128,28 @@ const AppMenu = ({
         >
           <Icon className="mr-2 h-4 w-4" />
           <span className="flex-1 text-left">{section.title}</span>
-          {isGroup && (
-            isExpanded ? (
+          {isGroup &&
+            (isExpanded ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
-            )
-          )}
+            ))}
         </Button>
 
         {isGroup && isExpanded && (
           <div className="pl-4 space-y-1 mt-1">
-            {section.items.map((item) => {
+            {section.items?.map((item) => {
               const itemIsActive = selectedSection === item.id;
               const ItemIcon = item.icon;
-              
+
               return (
                 <Button
                   key={item.id}
                   variant={itemIsActive ? "default" : "ghost"}
-                  className={`w-full justify-start ${itemIsActive ? 'bg-green-500 hover:bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+                  className={`w-full justify-start ${itemIsActive
+                      ? "bg-green-500 hover:bg-green-600 text-white"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                    }`}
                   onClick={() => {
                     setSelectedSection(item.id);
                     if (isMobile) {
@@ -172,18 +170,13 @@ const AppMenu = ({
 
   return (
     <motion.div
-      initial={isMobile ? { x: -320 } : false}
-      animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : false}
+      initial={isMobile ? { x: -320 } : undefined}
+      animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : undefined}
       transition={{ type: "spring", damping: 20 }}
-      className={`${
-        isMobile
-          ? `fixed inset-y-0 left-0 z-40 w-64`
-          : 'w-64'
-      } border-r border-gray-700 bg-black p-4`}
+      className={`${isMobile ? `fixed inset-y-0 left-0 z-40 w-64` : "w-64"
+        } border-r border-gray-700 bg-black p-4`}
     >
-      <div className="space-y-2">
-        {sections.map(renderMenuItem)}
-      </div>
+      <div className="space-y-2">{sections.map(renderMenuItem)}</div>
     </motion.div>
   );
 };

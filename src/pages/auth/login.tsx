@@ -1,11 +1,11 @@
-import React, { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
-import { authenticateUser } from "../../services/userService";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { useToast } from "../../components/ui/use-toast";
+import { authenticateUser } from "@/services/userService";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 interface User {
   id: string;

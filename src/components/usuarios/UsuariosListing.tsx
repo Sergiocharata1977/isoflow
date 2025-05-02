@@ -1,34 +1,41 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  Plus, 
-  Search, 
-  Download, 
-  Pencil, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Download,
+  Pencil,
+  Trash2,
   Users,
   Shield
 } from "lucide-react";
 import UsuarioModal from "./UsuarioModal";
 
+interface Usuario {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: string;
+  permisos: string[];
+}
+
 function UsuariosListing() {
   const { toast } = useToast();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUsuario, setSelectedUsuario] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [usuarios, setUsuarios] = useState(() => {
+  const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
     const saved = localStorage.getItem("usuarios");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? (JSON.parse(saved) as Usuario[]) : [];
   });
 
-  const handleSave = (usuarioData) => {
-    let updatedUsuarios;
+  const handleSave = (usuarioData: Omit<Usuario, "id">) => {
+    let updatedUsuarios: Usuario[];
     if (selectedUsuario) {
-      updatedUsuarios = usuarios.map(u => 
+      updatedUsuarios = usuarios.map(u =>
         u.id === selectedUsuario.id ? { ...usuarioData, id: selectedUsuario.id } : u
       );
       toast({
@@ -36,7 +43,11 @@ function UsuariosListing() {
         description: "Los datos del usuario han sido actualizados exitosamente"
       });
     } else {
-      updatedUsuarios = [...usuarios, { ...usuarioData, id: Date.now() }];
+      const newUsuario: Usuario = {
+        ...usuarioData,
+        id: Date.now()
+      };
+      updatedUsuarios = [...usuarios, newUsuario];
       toast({
         title: "Usuario creado",
         description: "Se ha agregado un nuevo usuario exitosamente"
@@ -48,12 +59,12 @@ function UsuariosListing() {
     setSelectedUsuario(null);
   };
 
-  const handleEdit = (usuario) => {
+  const handleEdit = (usuario: Usuario) => {
     setSelectedUsuario(usuario);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     const updatedUsuarios = usuarios.filter(u => u.id !== id);
     setUsuarios(updatedUsuarios);
     localStorage.setItem("usuarios", JSON.stringify(updatedUsuarios));
@@ -85,7 +96,7 @@ function UsuariosListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -132,7 +143,7 @@ function UsuariosListing() {
                 <td className="p-4">
                   <div className="flex flex-wrap gap-1">
                     {usuario.permisos.map((permiso, index) => (
-                      <span 
+                      <span
                         key={index}
                         className="px-2 py-1 text-xs rounded-full bg-secondary/10 text-secondary-foreground"
                       >

@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState, useEffect, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,15 +10,35 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState, useEffect } from "react";
 
-function UsuarioModal({ isOpen, onClose, onSave, usuario }) {
-  const [formData, setFormData] = useState({
+// Tipos para usuario y props
+interface Usuario {
+  nombre: string;
+  email: string;
+  password?: string;
+  rol: string;
+  permisos: string[];
+}
+
+interface UsuarioModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (usuario: Usuario) => void;
+  usuario?: Usuario | null;
+}
+
+const UsuarioModal: React.FC<UsuarioModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  usuario,
+}) => {
+  const [formData, setFormData] = useState<Usuario>({
     nombre: "",
     email: "",
     password: "",
     rol: "usuario",
-    permisos: []
+    permisos: [],
   });
 
   const menuSections = [
@@ -35,7 +54,7 @@ function UsuarioModal({ isOpen, onClose, onSave, usuario }) {
     { id: "documentos", name: "Documentos" },
     { id: "norma", name: "Puntos de la Norma" },
     { id: "usuarios", name: "Usuarios" },
-    { id: "configuracion", name: "Configuración" }
+    { id: "configuracion", name: "Configuración" },
   ];
 
   useEffect(() => {
@@ -47,22 +66,22 @@ function UsuarioModal({ isOpen, onClose, onSave, usuario }) {
         email: "",
         password: "",
         rol: "usuario",
-        permisos: []
+        permisos: [],
       });
     }
   }, [usuario]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
 
-  const handlePermissionChange = (sectionId) => {
-    setFormData(prev => ({
+  const handlePermissionChange = (sectionId: string) => {
+    setFormData((prev) => ({
       ...prev,
       permisos: prev.permisos.includes(sectionId)
-        ? prev.permisos.filter(p => p !== sectionId)
-        : [...prev.permisos, sectionId]
+        ? prev.permisos.filter((p) => p !== sectionId)
+        : [...prev.permisos, sectionId],
     }));
   };
 
@@ -70,9 +89,7 @@ function UsuarioModal({ isOpen, onClose, onSave, usuario }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {usuario ? "Editar Usuario" : "Nuevo Usuario"}
-          </DialogTitle>
+          <DialogTitle>{usuario ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -103,9 +120,9 @@ function UsuarioModal({ isOpen, onClose, onSave, usuario }) {
               <Input
                 id="password"
                 type="password"
-                value={formData.password}
+                value={formData.password || ""}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required={!usuario}
+                required
               />
             </div>
           )}
@@ -149,14 +166,12 @@ function UsuarioModal({ isOpen, onClose, onSave, usuario }) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {usuario ? "Guardar Cambios" : "Crear Usuario"}
-            </Button>
+            <Button type="submit">{usuario ? "Guardar Cambios" : "Crear Usuario"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default UsuarioModal;
