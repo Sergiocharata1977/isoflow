@@ -1,10 +1,5 @@
-import React, { useState, useEffect, Suspense } from "react";
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import React, { useState, useEffect, Suspense, SetStateAction } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import LoginPage from "@/pages/auth/login";
 import {
   ChevronDown,
   ChevronRight,
@@ -14,25 +9,21 @@ import {
   Users,
   Building2,
   FileText,
-  Settings,
   LayoutGrid,
   ClipboardList,
   Target,
   BarChart2,
   Ruler,
   ClipboardCheck,
-  BadgeCheck as TicketCheck,
-  Star,
   Calendar,
-  Bell,
-  UserCircle,
-  MessageSquare,
-  LineChart,
 } from "lucide-react";
+import { Button } from "./components/ui/button";
+import { Toaster } from "./components/ui/toaster";
+import LoginPage from "./pages/auth/login";
 
 // Lazy loaded components with preload
 const NoticiasListing = React.lazy(() => {
-  const component = import("@/components/noticias/NoticiasListing");
+  const component = import("./components/noticias/NoticiasListing");
   component.catch((error) =>
     console.error("Error cargando NoticiasListing:", error)
   );
@@ -40,7 +31,7 @@ const NoticiasListing = React.lazy(() => {
 });
 
 const CalendarView = React.lazy(() => {
-  const component = import("@/components/calendar/CalendarView");
+  const component = import("./components/calendar/CalendarView");
   component.catch((error) =>
     console.error("Error cargando CalendarView:", error)
   );
@@ -48,54 +39,51 @@ const CalendarView = React.lazy(() => {
 });
 
 const MejorasListing = React.lazy(() => {
-  const component = import("@/components/mejoras/MejorasListing");
+  const component = import("./components/mejoras/MejorasListing");
   component.catch((error) =>
     console.error("Error cargando MejorasListing:", error)
   );
   return component;
 });
 
-const MejorasDashboard = React.lazy(() =>
-  import("@/components/mejoras/MejorasDashboard")
-);
 const PersonalListing = React.lazy(() =>
-  import("@/components/personal/PersonalListing")
+  import("./components/personal/PersonalListing")
 );
+
 const DepartamentosListing = React.lazy(() =>
-  import("@/components/rrhh/DepartamentosListing")
+  import("./components/rrhh/DepartamentosListing")
 );
+
 const PuestosListing = React.lazy(() =>
-  import("@/components/rrhh/PuestosListing")
+  import("./components/rrhh/PuestosListing")
 );
+
 const ProcesosListing = React.lazy(() =>
-  import("@/components/procesos/ProcesosListing")
+  import("./components/procesos/ProcesosListing")
 );
+
 const ObjetivosListing2 = React.lazy(() =>
-  import("@/components/procesos/ObjetivosListing2")
+  import("./components/procesos/ObjetivosListing2")
 );
+
 const IndicadoresListing2 = React.lazy(() =>
-  import("@/components/procesos/IndicadoresListing2")
+  import("./components/procesos/IndicadoresListing2")
 );
+
 const MedicionesListing2 = React.lazy(() =>
-  import("@/components/procesos/MedicionesListing2")
+  import("./components/procesos/MedicionesListing2")
 );
+
 const DocumentosListing = React.lazy(() =>
-  import("@/components/documentos/DocumentosListing")
+  import("./components/documentos/DocumentosListing")
 );
+
 const AuditoriasListing = React.lazy(() =>
-  import("@/components/auditorias/AuditoriasListing")
+  import("./components/auditorias/AuditoriasListing")
 );
-const TicketsListing = React.lazy(() =>
-  import("@/components/tickets/TicketsListing")
-);
-const EncuestasListing = React.lazy(() =>
-  import("@/components/encuestas/EncuestasListing")
-);
-const UsuariosListing = React.lazy(() =>
-  import("@/components/usuarios/UsuariosListing")
-);
+
 const PuntosNormaListing = React.lazy(() =>
-  import("@/components/norma/PuntosNormaListing")
+  import("./components/norma/PuntosNormaListing")
 );
 
 // Loading component
@@ -147,65 +135,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Utilidad para manejar peticiones fetch con manejo de errores
-const fetchWithErrorHandling = async (url, options = {}) => {
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      // Si la respuesta no es exitosa, lanzamos un error con detalles
-      const errorText = await response.text();
-      throw new Error(
-        `Error ${response.status}: ${errorText || response.statusText}`
-      );
-    }
-
-    // Para respuestas vacías (como 204 No Content)
-    if (response.status === 204) {
-      return null;
-    }
-
-    // Intentamos parsear la respuesta como JSON
-    try {
-      return await response.json();
-    } catch (e) {
-      // Si no es JSON, devolvemos el texto
-      return await response.text();
-    }
-  } catch (error) {
-    console.error("Error en la petición fetch:", error);
-    // Reenviar el error para que pueda ser manejado por el componente
-    throw error;
-  }
-};
-
-// Métodos de API con manejo de errores
-const api = {
-  get: (url) => fetchWithErrorHandling(url),
-  post: (url, data) =>
-    fetchWithErrorHandling(url, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  put: (url, data) =>
-    fetchWithErrorHandling(url, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-  delete: (url) =>
-    fetchWithErrorHandling(url, {
-      method: "DELETE",
-    }),
-};
-
 function App() {
-  const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedSection, setSelectedSection] = useState("noticias");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -235,9 +165,9 @@ function App() {
       try {
         // Precargar componentes principales
         const componentsToPreload = [
-          import("@/components/noticias/NoticiasListing"),
-          import("@/components/calendar/CalendarView"),
-          import("@/components/mejoras/MejorasListing"),
+          import("./components/noticias/NoticiasListing"),
+          import("./components/calendar/CalendarView"),
+          import("./components/mejoras/MejorasListing"),
         ];
 
         await Promise.all(componentsToPreload);
@@ -249,15 +179,15 @@ function App() {
     preloadMainComponents();
   }, []);
 
-  const toggleGroup = (groupId) => {
-    setExpandedGroups((prevGroups) =>
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prevGroups: string[]) =>
       prevGroups.includes(groupId)
         ? prevGroups.filter((id) => id !== groupId)
         : [...prevGroups, groupId]
     );
   };
 
-  const handleSectionChange = (sectionId) => {
+  const handleSectionChange = (sectionId: SetStateAction<string>) => {
     setIsLoading(true);
     setSelectedSection(sectionId);
     if (isMobile) {
@@ -349,7 +279,7 @@ function App() {
     },
   ];
 
-  const renderMenuItem = (section) => {
+  const renderMenuItem = (section: any) => {
     const isGroup = section.items && section.items.length > 0;
     const isExpanded = expandedGroups.includes(section.id);
     const isActive = !isGroup && selectedSection === section.id;
@@ -360,8 +290,8 @@ function App() {
         <Button
           variant={isActive ? "default" : "ghost"}
           className={`w-full justify-start ${isActive
-              ? "bg-green-500 hover:bg-green-600 text-white"
-              : "text-gray-300 hover:text-white hover:bg-gray-800"
+            ? "bg-green-500 hover:bg-green-600 text-white"
+            : "text-gray-300 hover:text-white hover:bg-gray-800"
             }`}
           onClick={() => {
             if (isGroup) {
@@ -392,8 +322,8 @@ function App() {
                   key={item.id}
                   variant={itemIsActive ? "default" : "ghost"}
                   className={`w-full justify-start ${itemIsActive
-                      ? "bg-green-500 hover:bg-green-600 text-white"
-                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                    ? "bg-green-500 hover:bg-green-600 text-white"
+                    : "text-gray-300 hover:text-white hover:bg-gray-800"
                     }`}
                   onClick={() => {
                     handleSectionChange(item.id);
