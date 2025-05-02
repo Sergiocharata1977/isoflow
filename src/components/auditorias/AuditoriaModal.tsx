@@ -1,21 +1,47 @@
-
-import React from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Textarea } from "../ui/textarea";
+import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from "../ui/dialog";
 
-function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
-  const [formData, setFormData] = useState({
+interface PuntoEvaluado {
+  punto_norma: string;
+  calificacion: string;
+  comentarios: string;
+}
+
+interface Auditoria {
+  numero: string;
+  fecha_programada: string;
+  responsable: string;
+  objetivo: string;
+  procesos_evaluar: string;
+  estado: string;
+  puntos: PuntoEvaluado[];
+  comentarios_finales: string;
+}
+
+interface Persona {
+  id: number;
+  nombre: string;
+}
+
+interface Proceso {
+  id: number;
+  titulo: string;
+}
+
+interface AuditoriaModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (auditoria: Auditoria) => void;
+  auditoria?: Auditoria;
+}
+
+function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalProps) {
+  const [formData, setFormData] = useState<Auditoria>({
     numero: "",
     fecha_programada: "",
     responsable: "",
@@ -26,12 +52,12 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
     comentarios_finales: ""
   });
 
-  const [personal, setPersonal] = useState(() => {
+  const [personal, setPersonal] = useState<Persona[]>(() => {
     const saved = localStorage.getItem("personal");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [procesos, setProcesos] = useState(() => {
+  const [procesos, setProcesos] = useState<Proceso[]>(() => {
     const saved = localStorage.getItem("procesos");
     return saved ? JSON.parse(saved) : [];
   });
@@ -40,15 +66,19 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
     if (auditoria) {
       setFormData(auditoria);
     } else {
-      // Generar número automático
       const date = new Date();
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       setFormData({
-        ...formData,
         numero: `A${year}${month}-${random}`,
-        puntos: []
+        fecha_programada: "",
+        responsable: "",
+        objetivo: "",
+        procesos_evaluar: "",
+        estado: "Planificada",
+        puntos: [],
+        comentarios_finales: ""
       });
     }
   }, [auditoria]);
@@ -67,23 +97,23 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
     }));
   };
 
-  const removePuntoEvaluado = (index) => {
+  const removePuntoEvaluado = (index: number) => {
     setFormData(prev => ({
       ...prev,
       puntos: prev.puntos.filter((_, i) => i !== index)
     }));
   };
 
-  const updatePuntoEvaluado = (index, field, value) => {
+  const updatePuntoEvaluado = (index: number, field: keyof PuntoEvaluado, value: string) => {
     setFormData(prev => ({
       ...prev,
-      puntos: prev.puntos.map((punto, i) => 
+      puntos: prev.puntos.map((punto, i) =>
         i === index ? { ...punto, [field]: value } : punto
       )
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave(formData);
   };
@@ -92,19 +122,13 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {auditoria ? "Editar Auditoría" : "Nueva Auditoría"}
-          </DialogTitle>
+          <DialogTitle>{auditoria ? "Editar Auditoría" : "Nueva Auditoría"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="numero">Número de Auditoría</Label>
-              <Input
-                id="numero"
-                value={formData.numero}
-                disabled
-              />
+              <Input id="numero" value={formData.numero} disabled />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fecha_programada">Fecha Programada</Label>
@@ -112,7 +136,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
                 id="fecha_programada"
                 type="date"
                 value={formData.fecha_programada}
-                onChange={(e) => setFormData({ ...formData, fecha_programada: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_programada: e.target.value })
+                }
                 required
               />
             </div>
@@ -124,7 +150,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
               id="responsable"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={formData.responsable}
-              onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, responsable: e.target.value })
+              }
               required
             >
               <option value="">Seleccione un responsable</option>
@@ -141,7 +169,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
             <Textarea
               id="objetivo"
               value={formData.objetivo}
-              onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, objetivo: e.target.value })
+              }
               required
               className="min-h-[100px]"
             />
@@ -153,7 +183,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
               id="procesos_evaluar"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={formData.procesos_evaluar}
-              onChange={(e) => setFormData({ ...formData, procesos_evaluar: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, procesos_evaluar: e.target.value })
+              }
               required
             >
               <option value="">Seleccione un proceso</option>
@@ -171,7 +203,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
               id="estado"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={formData.estado}
-              onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, estado: e.target.value })
+              }
               required
             >
               <option value="Planificada">Planificada</option>
@@ -184,7 +218,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <Label>Puntos Evaluados</Label>
-              <Button type="button"onClick={addPuntoEvaluado} variant="outline" size="sm">
+              <Button type="button" onClick={addPuntoEvaluado} variant="outline" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Punto
               </Button>
@@ -209,7 +243,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
                     <Label>Punto de la Norma</Label>
                     <Input
                       value={punto.punto_norma}
-                      onChange={(e) => updatePuntoEvaluado(index, 'punto_norma', e.target.value)}
+                      onChange={(e) =>
+                        updatePuntoEvaluado(index, "punto_norma", e.target.value)
+                      }
                       required
                     />
                   </div>
@@ -218,7 +254,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
                     <select
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                       value={punto.calificacion}
-                      onChange={(e) => updatePuntoEvaluado(index, 'calificacion', e.target.value)}
+                      onChange={(e) =>
+                        updatePuntoEvaluado(index, "calificacion", e.target.value)
+                      }
                       required
                     >
                       <option value="Malo">Malo</option>
@@ -233,7 +271,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
                   <Label>Comentarios</Label>
                   <Textarea
                     value={punto.comentarios}
-                    onChange={(e) => updatePuntoEvaluado(index, 'comentarios', e.target.value)}
+                    onChange={(e) =>
+                      updatePuntoEvaluado(index, "comentarios", e.target.value)
+                    }
                     className="min-h-[100px]"
                   />
                 </div>
@@ -246,7 +286,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }) {
             <Textarea
               id="comentarios_finales"
               value={formData.comentarios_finales}
-              onChange={(e) => setFormData({ ...formData, comentarios_finales: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, comentarios_finales: e.target.value })
+              }
               className="min-h-[100px]"
             />
           </div>

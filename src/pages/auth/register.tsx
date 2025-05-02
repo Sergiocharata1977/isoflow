@@ -1,11 +1,9 @@
-
-import React from "react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
+import { useToast } from "../../components/ui/use-toast";
+import { Label } from "../../components/ui/label";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 
 function RegisterPage() {
   const { toast } = useToast();
@@ -16,7 +14,7 @@ function RegisterPage() {
     confirmPassword: ""
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       toast({
