@@ -17,17 +17,27 @@ import {
   Ruler,
   ClipboardCheck,
   Calendar,
+  LucideIcon,
+  LogOut,
+  User,
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/toaster";
 import LoginPage from "./pages/auth/login";
 import { ErrorBoundary } from "./utils/ErrorBoundary";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
+import { SectionMenuModel } from "./models/section-menu-model";
+import {
+  Root as DropdownMenuRoot,
+  Trigger as DropdownMenuTrigger,
+  Content as DropdownMenuContent,
+  Item as DropdownMenuItem,
+} from "@radix-ui/react-dropdown-menu";
 
 // Lazy loaded components with preload
 const NoticiasListing = React.lazy(() => {
   const component = import("./components/noticias/NoticiasListing");
-  component.catch((error) =>
+  component.catch((error: any) =>
     console.error("Error cargando NoticiasListing:", error)
   );
   return component;
@@ -136,7 +146,7 @@ function App() {
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prevGroups: string[]) =>
       prevGroups.includes(groupId)
-        ? prevGroups.filter((id) => id !== groupId)
+        ? prevGroups.filter((id: string) => id !== groupId)
         : [...prevGroups, groupId]
     );
   };
@@ -147,11 +157,10 @@ function App() {
     if (isMobile) {
       setIsMobileMenuOpen(false);
     }
-    // Simular tiempo de carga mínimo para mejor UX
     setTimeout(() => setIsLoading(false), 300);
   };
 
-  const sections = [
+  const sections: SectionMenuModel[] = [
     {
       id: "noticias",
       title: "Tablero Central",
@@ -233,11 +242,11 @@ function App() {
     },
   ];
 
-  const renderMenuItem = (section: any) => {
-    const isGroup = section.items && section.items.length > 0;
-    const isExpanded = expandedGroups.includes(section.id);
-    const isActive = !isGroup && selectedSection === section.id;
-    const Icon = section.icon;
+  const renderMenuItem = (section: SectionMenuModel) => {
+    const isGroup: boolean | undefined = section.items && section.items.length > 0;
+    const isExpanded: boolean = expandedGroups.includes(section.id);
+    const isActive: boolean = !isGroup && selectedSection === section.id;
+    const Icon: LucideIcon = section.icon;
 
     return (
       <div key={section.id} className="mb-1">
@@ -267,9 +276,9 @@ function App() {
 
         {isGroup && isExpanded && (
           <div className="pl-4 space-y-1 mt-1">
-            {section.items.map((item) => {
-              const itemIsActive = selectedSection === item.id;
-              const ItemIcon = item.icon;
+            {section.items?.map((item: SectionMenuModel) => {
+              const itemIsActive: boolean = selectedSection === item.id;
+              const ItemIcon: LucideIcon = item.icon;
 
               return (
                 <Button
@@ -391,7 +400,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex h-screen overflow-hidden">
-        {/* Mobile Menu Button */}
+
         {isMobile && (
           <button
             className="fixed top-4 left-4 z-50 p-2 bg-background rounded-lg border border-border shadow-lg"
@@ -405,7 +414,6 @@ function App() {
           </button>
         )}
 
-        {/* Sidebar */}
         <motion.div
           initial={isMobile ? { x: -320 } : false}
           animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : false}
@@ -416,7 +424,6 @@ function App() {
           <div className="space-y-2">{sections.map(renderMenuItem)}</div>
         </motion.div>
 
-        {/* Main Content */}
         <motion.div
           className={`flex-1 overflow-hidden flex flex-col ${isMobile ? "w-full" : ""
             }`}
@@ -424,24 +431,57 @@ function App() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Header */}
+
           <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
             <h1 className="text-xl font-semibold">
               {sections.find((s) => s.id === selectedSection)?.title ||
                 "Dashboard"}
             </h1>
+
+            <DropdownMenuRoot>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center space-x-2 focus:outline-none">
+                  <img
+                    src="https://i.pravatar.cc/40"
+                    alt="Avatar"
+                    className="w-8 h-8 rounded-full border"
+                  />
+                  <span className="text-sm font-medium">Juan Pérez</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="z-50 mt-2 w-48 rounded-md border border-border bg-background shadow-md"
+                sideOffset={5}
+              >
+                <DropdownMenuItem
+                  onClick={() => console.log("Ver perfil")}
+                  className="px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 cursor-pointer"
+                >
+                  <User className="w-4 h-4" />
+                  Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => console.log("Cerrar sesión")}
+                  className="px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuRoot>
+
           </div>
 
-          {/* Content area */}
           <div
             className={`flex-1 overflow-auto p-6 ${isMobile ? "pt-16" : ""}`}
           >
             {renderContent()}
           </div>
+
         </motion.div>
-      </div>
+      </div >
       <Toaster />
-    </div>
+    </div >
   );
 }
 
