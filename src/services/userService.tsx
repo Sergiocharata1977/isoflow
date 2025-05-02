@@ -55,7 +55,7 @@ export async function createUser(data: User) {
   }
 }
 
-export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user: Omit<User, "password"> }> {
+export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user: Omit<User, "password">; access_token: string }> {
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   const result: User[] = await db.query<User>("SELECT * FROM users WHERE email = ?", [email]);
@@ -74,9 +74,12 @@ export async function authenticateUser(email: string, password: string): Promise
 
   const { password: _, ...userWithoutPassword } = user;
 
+  const token = `fake-token-${user.id}-${Date.now()}`;
+
   return {
     success: true,
     user: userWithoutPassword,
+    access_token: token
   };
 }
 

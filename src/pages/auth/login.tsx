@@ -17,8 +17,9 @@ interface LoginPageProps {
 }
 
 interface AuthResult {
-  success: boolean;
-  user: User;
+  success: boolean
+  user: User
+  access_token: string
 }
 
 function LoginPage({ onLogin }: LoginPageProps) {
@@ -56,6 +57,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
       const result: AuthResult = await authenticateUser(formData.email, formData.password);
 
       if (result.success) {
+        localStorage.setItem('access_token', result.access_token);
         if (formData.rememberMe) {
           localStorage.setItem("rememberMe", "true");
           localStorage.setItem("savedEmail", formData.email);
