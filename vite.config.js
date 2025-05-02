@@ -135,6 +135,9 @@ const addTransformIndexHtml = {
 export default defineConfig({
   plugins: [react(), addTransformIndexHtml],
   base: "/",
+  optimizeDeps: {
+    include: ['crypto-browserify']
+  },
   server: {
     cors: true,
     headers: {

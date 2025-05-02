@@ -1,4 +1,4 @@
-import turso from "./db.js";
+import db from "./db";
 import bcrypt from "bcryptjs";
 
 // Mock de usuarios para desarrollo
@@ -18,6 +18,16 @@ const mockUsers = [
   },
 ];
 
+interface User {
+  id: string;
+  email: string;
+  password: string;
+  full_name: string;
+  role: string;
+  department: string;
+  position: string;
+}
+
 export async function createUser({
   email,
   password,
@@ -28,10 +38,10 @@ export async function createUser({
 }) {
   try {
     // Verificar si el usuario ya existe
-    const existingUser = await turso.execute({
-      sql: "SELECT * FROM users WHERE email = ?",
-      args: [email],
-    });
+    const existingUser = await db.execute(
+      "SELECT * FROM users WHERE email = ?",
+      [email],
+    );
 
     if (existingUser.rows.length > 0) {
       throw new Error("El usuario ya existe");
@@ -41,14 +51,14 @@ export async function createUser({
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear el usuario
-    const result = await turso.execute({
-      sql: `
+    const result = await db.execute(
+      `
         INSERT INTO users (
           id, email, password, full_name, role,
           department, position
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
-      args: [
+      [
         "user-" + Date.now(),
         email,
         hashedPassword,
@@ -56,8 +66,8 @@ export async function createUser({
         role,
         department,
         position,
-      ],
-    });
+      ]
+    );
 
     return {
       success: true,
@@ -69,15 +79,18 @@ export async function createUser({
   }
 }
 
-export async function authenticateUser(email, password) {
-  // Simular delay de red
+export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user: Omit<User, "password"> }> {
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const user = mockUsers.find(
-    (u) => u.email === email && u.password === password
-  );
+  const result = await db.query<User>("SELECT * FROM users WHERE email = ?", [email]);
+  const user = result[0];
 
   if (!user) {
+    throw new Error("Usuario o contraseña incorrectos");
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
     throw new Error("Usuario o contraseña incorrectos");
   }
 

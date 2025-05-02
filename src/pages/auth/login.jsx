@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
-import { authenticateUser } from "@/services/userService";
+import { authenticateUser } from "../../services/userService";
 
 function LoginPage({ onLogin }) {
   const { toast } = useToast();
