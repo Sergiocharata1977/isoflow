@@ -36,8 +36,8 @@ function LoginPage({ onLogin }) {
     setError("");
 
     try {
-      // Autenticación real con la base de datos
       const result = await authenticateUser(formData.email, formData.password);
+
       if (result.success) {
         // Guardar preferencias si "recordar sesión" está activado
         if (formData.rememberMe) {
@@ -55,10 +55,19 @@ function LoginPage({ onLogin }) {
         });
       }
     } catch (error) {
-      setError("Usuario o contraseña incorrectos");
+      if (error instanceof Error) {
+        console.log(error.message);
+
+        setError(error.message ?? "Usuario o contraseña incorrectos");
+      } else {
+        console.log("Error desconocido", error);
+
+        setError("Usuario o contraseña incorrectos");
+      }
+
       toast({
         title: "Error de autenticación",
-        description: "Usuario o contraseña incorrectos",
+        description: error instanceof Error ? error.message : "Usuario o contraseña incorrectos",
         variant: "destructive",
       });
     } finally {
