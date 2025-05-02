@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from "react";
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -358,11 +359,10 @@ function App() {
       <div key={section.id} className="mb-1">
         <Button
           variant={isActive ? "default" : "ghost"}
-          className={`w-full justify-start ${
-            isActive
+          className={`w-full justify-start ${isActive
               ? "bg-green-500 hover:bg-green-600 text-white"
               : "text-gray-300 hover:text-white hover:bg-gray-800"
-          }`}
+            }`}
           onClick={() => {
             if (isGroup) {
               toggleGroup(section.id);
@@ -391,11 +391,10 @@ function App() {
                 <Button
                   key={item.id}
                   variant={itemIsActive ? "default" : "ghost"}
-                  className={`w-full justify-start ${
-                    itemIsActive
+                  className={`w-full justify-start ${itemIsActive
                       ? "bg-green-500 hover:bg-green-600 text-white"
                       : "text-gray-300 hover:text-white hover:bg-gray-800"
-                  }`}
+                    }`}
                   onClick={() => {
                     handleSectionChange(item.id);
                   }}
@@ -527,18 +526,16 @@ function App() {
           initial={isMobile ? { x: -320 } : false}
           animate={isMobile ? { x: isMobileMenuOpen ? 0 : -320 } : false}
           transition={{ type: "spring", damping: 20 }}
-          className={`${
-            isMobile ? "fixed inset-y-0 left-0 z-40 w-64 shadow-xl" : "w-64"
-          } border-r border-gray-700 bg-black p-4 overflow-y-auto`}
+          className={`${isMobile ? "fixed inset-y-0 left-0 z-40 w-64 shadow-xl" : "w-64"
+            } border-r border-gray-700 bg-black p-4 overflow-y-auto`}
         >
           <div className="space-y-2">{sections.map(renderMenuItem)}</div>
         </motion.div>
 
         {/* Main Content */}
         <motion.div
-          className={`flex-1 overflow-hidden flex flex-col ${
-            isMobile ? "w-full" : ""
-          }`}
+          className={`flex-1 overflow-hidden flex flex-col ${isMobile ? "w-full" : ""
+            }`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
