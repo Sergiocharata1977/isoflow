@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense, SetStateAction } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ChevronDown,
@@ -20,6 +21,8 @@ import {
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/toaster";
 import LoginPage from "./pages/auth/login";
+import { ErrorBoundary } from "./utils/ErrorBoundary";
+import { LoadingSpinner } from "./utils/LoadingSpinner";
 
 // Lazy loaded components with preload
 const NoticiasListing = React.lazy(() => {
@@ -85,55 +88,6 @@ const AuditoriasListing = React.lazy(() =>
 const PuntosNormaListing = React.lazy(() =>
   import("./components/norma/PuntosNormaListing")
 );
-
-// Loading component
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center h-full w-full">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-  </div>
-);
-
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("Error en componente:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-64 p-4">
-          <h2 className="text-xl font-semibold text-red-500 mb-2">
-            Algo salió mal
-          </h2>
-          <p className="text-gray-600 text-center mb-4">
-            {this.state.error?.message || "Ha ocurrido un error inesperado"}
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              this.setState({ hasError: false, error: null });
-              window.location.reload();
-            }}
-          >
-            Intentar de nuevo
-          </Button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
