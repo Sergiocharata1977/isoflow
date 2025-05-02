@@ -9,7 +9,7 @@ import { User, LogOut } from 'lucide-react';
 
 const Header = ({ sections, selectedSection }: { sections: any[], selectedSection: string }) => {
   return (
-    <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+    <div className="dark:bg-slate-800 h-16 border-b border-border bg-card px-6 flex items-center justify-between">
       {/* Título del Dashboard */}
       <h1 className="text-xl font-semibold">
         {sections.find((s) => s.id === selectedSection)?.title || "Dashboard"}

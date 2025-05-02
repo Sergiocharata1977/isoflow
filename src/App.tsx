@@ -428,7 +428,7 @@ function App() {
           <Header sections={sections} selectedSection={selectedSection} />
 
           <div
-            className={`flex-1 overflow-auto p-6 ${isMobile ? "pt-16" : ""}`}
+            className={`dark:bg-slate-800 flex-1 overflow-auto p-6 ${isMobile ? "pt-16" : ""}`}
           >
             {renderContent()}
           </div>
