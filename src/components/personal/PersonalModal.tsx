@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,13 +10,54 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Camera, Upload } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Plus, Trash2, Camera } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import imageCompression from "browser-image-compression";
 
-function PersonalModal({ isOpen, onClose, onSave, person }) {
-  const [formData, setFormData] = useState({
+interface Formacion {
+  titulo: string;
+  institucion: string;
+  anioFinalizacion: string;
+  descripcion?: string;
+}
+
+interface Experiencia {
+  empresa: string;
+  puesto: string;
+  fechaInicio: string;
+  fechaFin?: string;
+  descripcion?: string;
+}
+
+interface Personal {
+  numero: string;
+  nombre: string;
+  puesto: string;
+  departamento: string;
+  email: string;
+  telefono: string;
+  fechaIngreso: string;
+  documentoIdentidad: string;
+  direccion: string;
+  formacionAcademica: Formacion[];
+  experienciaLaboral: Experiencia[];
+  competencias?: string;
+  evaluacionDesempeno?: string;
+  capacitacionesRecibidas?: string;
+  observaciones?: string;
+  imagen: string | null;
+  imagenPreview: string | null;
+}
+
+interface PersonalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Personal) => void;
+  person?: Personal;
+}
+
+function PersonalModal({ isOpen, onClose, onSave, person }: PersonalModalProps) {
+  const [formData, setFormData] = useState<Personal>({
     numero: "",
     nombre: "",
     puesto: "",
@@ -34,15 +74,15 @@ function PersonalModal({ isOpen, onClose, onSave, person }) {
     capacitacionesRecibidas: "",
     observaciones: "",
     imagen: null,
-    imagenPreview: null
+    imagenPreview: null,
   });
 
-  const [puestos, setPuestos] = useState(() => {
+  const [puestos, setPuestos] = useState<string[]>(() => {
     const saved = localStorage.getItem("puestos");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [departamentos, setDepartamentos] = useState(() => {
+  const [departamentos, setDepartamentos] = useState<string[]>(() => {
     const saved = localStorage.getItem("departamentos");
     return saved ? JSON.parse(saved) : [];
   });
@@ -51,60 +91,62 @@ function PersonalModal({ isOpen, onClose, onSave, person }) {
     if (person) {
       setFormData({
         ...person,
-        imagenPreview: person.imagen
+        imagenPreview: person.imagen,
       });
     } else {
       // Generar número automático
       const date = new Date();
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const random = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
       setFormData({
         ...formData,
-        numero: `P${year}${month}-${random}`,
+        numero: `P${year}<span class="math-inline">\{month\}\-</span>{random}`,
         formacionAcademica: [],
-        experienciaLaboral: []
+        experienciaLaboral: [],
       });
     }
   }, [person]);
 
-  const onDrop = async (acceptedFiles) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     try {
       const file = acceptedFiles[0];
-      
+
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true
+        useWebWorker: true,
       };
 
       const compressedFile = await imageCompression(file, options);
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          imagen: reader.result,
-          imagenPreview: reader.result
+          imagen: reader.result as string,
+          imagenPreview: reader.result as string,
         }));
       };
       reader.readAsDataURL(compressedFile);
     } catch (error) {
       console.error("Error processing image:", error);
     }
-  };
+  }, []);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg']
+      "image/*": [".png", ".jpg", ".jpeg"],
     },
     maxSize: 5242880, // 5MB
-    multiple: false
+    multiple: false,
   });
 
   const addFormacionAcademica = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       formacionAcademica: [
         ...prev.formacionAcademica,
@@ -112,30 +154,34 @@ function PersonalModal({ isOpen, onClose, onSave, person }) {
           titulo: "",
           institucion: "",
           anioFinalizacion: "",
-          descripcion: ""
-        }
-      ]
+          descripcion: "",
+        },
+      ],
     }));
   };
 
-  const removeFormacionAcademica = (index) => {
-    setFormData(prev => ({
+  const removeFormacionAcademica = (index: number) => {
+    setFormData((prev) => ({
       ...prev,
-      formacionAcademica: prev.formacionAcademica.filter((_, i) => i !== index)
+      formacionAcademica: prev.formacionAcademica.filter((_, i) => i !== index),
     }));
   };
 
-  const updateFormacionAcademica = (index, field, value) => {
-    setFormData(prev => ({
+  const updateFormacionAcademica = (
+    index: number,
+    field: keyof Formacion,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      formacionAcademica: prev.formacionAcademica.map((formacion, i) => 
+      formacionAcademica: prev.formacionAcademica.map((formacion, i) =>
         i === index ? { ...formacion, [field]: value } : formacion
-      )
+      ),
     }));
   };
 
   const addExperienciaLaboral = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       experienciaLaboral: [
         ...prev.experienciaLaboral,
@@ -144,29 +190,33 @@ function PersonalModal({ isOpen, onClose, onSave, person }) {
           puesto: "",
           fechaInicio: "",
           fechaFin: "",
-          descripcion: ""
-        }
-      ]
+          descripcion: "",
+        },
+      ],
     }));
   };
 
-  const removeExperienciaLaboral = (index) => {
-    setFormData(prev => ({
+  const removeExperienciaLaboral = (index: number) => {
+    setFormData((prev) => ({
       ...prev,
-      experienciaLaboral: prev.experienciaLaboral.filter((_, i) => i !== index)
+      experienciaLaboral: prev.experienciaLaboral.filter((_, i) => i !== index),
     }));
   };
 
-  const updateExperienciaLaboral = (index, field, value) => {
-    setFormData(prev => ({
+  const updateExperienciaLaboral = (
+    index: number,
+    field: keyof Experiencia,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      experienciaLaboral: prev.experienciaLaboral.map((experiencia, i) => 
+      experienciaLaboral: prev.experienciaLaboral.map((experiencia, i) =>
         i === index ? { ...experiencia, [field]: value } : experiencia
-      )
+      ),
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
