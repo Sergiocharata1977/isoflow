@@ -1,8 +1,7 @@
-
 import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   ArrowLeft,
   Users,
   Pencil,
@@ -17,10 +16,49 @@ import {
   BookOpen,
   Briefcase,
   Star,
-  BarChart2
+  BarChart2,
 } from "lucide-react";
 
-function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
+interface Formacion {
+  titulo?: string;
+  institucion?: string;
+  anioFinalizacion?: string;
+  descripcion?: string;
+}
+
+interface Experiencia {
+  puesto?: string;
+  empresa?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  descripcion?: string;
+}
+
+interface PersonalSingleProps {
+  persona: {
+    id: number;
+    nombre?: string;
+    puesto?: string;
+    departamento?: string;
+    imagen?: string;
+    email?: string;
+    telefono?: string;
+    documentoIdentidad?: string;
+    fechaIngreso?: string;
+    direccion?: string;
+    formacionAcademica?: Formacion[];
+    experienciaLaboral?: Experiencia[];
+    competencias?: string;
+    evaluacionDesempeno?: string;
+    capacitacionesRecibidas?: string;
+    // Add other properties as needed
+  };
+  onBack: () => void;
+  onEdit: (persona: PersonalSingleProps["persona"]) => void;
+  onDelete: (id: number) => void;
+}
+
+function PersonalSingle({ persona, onBack, onEdit, onDelete }: PersonalSingleProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -34,10 +72,13 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </Button>
-          <Button variant="destructive" onClick={() => {
-            onDelete(persona.id);
-            onBack();
-          }}>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              onDelete(persona.id);
+              onBack();
+            }}
+          >
             <Trash2 className="mr-2 h-4 w-4" />
             Eliminar
           </Button>
@@ -55,8 +96,11 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
           >
             <div className="flex items-start space-x-4">
               <div className="w-24 h-24 rounded-lg overflow-hidden">
-                <img 
-                  src={persona.imagen || "https://images.unsplash.com/photo-1578390432942-d323db577792"}
+                <img
+                  src={
+                    persona.imagen ||
+                    "https://images.unsplash.com/photo-1578390432942-d323db577792"
+                  }
                   alt={`Foto de ${persona.nombre}`}
                   className="w-full h-full object-cover"
                 />
@@ -100,12 +144,18 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Documento de Identidad</p>
+                <p className="text-sm text-muted-foreground">
+                  Documento de Identidad
+                </p>
                 <p>{persona.documentoIdentidad}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Fecha de Ingreso</p>
-                <p>{new Date(persona.fechaIngreso).toLocaleDateString()}</p>
+                <p>
+                  {persona.fechaIngreso
+                    ? new Date(persona.fechaIngreso).toLocaleDateString()
+                    : ""}
+                </p>
               </div>
               <div className="col-span-2">
                 <p className="text-sm text-muted-foreground">Dirección</p>
@@ -130,10 +180,16 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
                 {persona.formacionAcademica?.map((formacion, index) => (
                   <div key={index} className="space-y-2">
                     <h3 className="font-medium">{formacion.titulo}</h3>
-                    <p className="text-sm text-muted-foreground">{formacion.institucion}</p>
-                    <p className="text-sm text-muted-foreground">Año: {formacion.anioFinalizacion}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formacion.institucion}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Año: {formacion.anioFinalizacion}
+                    </p>
                     {formacion.descripcion && (
-                      <p className="text-sm text-muted-foreground">{formacion.descripcion}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formacion.descripcion}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -148,13 +204,22 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
                 {persona.experienciaLaboral?.map((experiencia, index) => (
                   <div key={index} className="space-y-2">
                     <h3 className="font-medium">{experiencia.puesto}</h3>
-                    <p className="text-sm text-muted-foreground">{experiencia.empresa}</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(experiencia.fechaInicio).toLocaleDateString()} - 
-                      {experiencia.fechaFin ? new Date(experiencia.fechaFin).toLocaleDateString() : 'Actual'}
+                      {experiencia.empresa}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {experiencia.fechaInicio
+                        ? new Date(experiencia.fechaInicio).toLocaleDateString()
+                        : ""}
+                      {" - "}
+                      {experiencia.fechaFin
+                        ? new Date(experiencia.fechaFin).toLocaleDateString()
+                        : "Actual"}
                     </p>
                     {experiencia.descripcion && (
-                      <p className="text-sm text-muted-foreground">{experiencia.descripcion}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {experiencia.descripcion}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -176,8 +241,11 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
               Competencias
             </h2>
             <div className="space-y-2">
-              {persona.competencias?.split('\n').map((competencia, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent">
+              {persona.competencias?.split("\n").map((competencia, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
+                >
                   <span className="w-2 h-2 rounded-full bg-primary" />
                   <span>{competencia}</span>
                 </div>
@@ -213,12 +281,17 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }) {
               Capacitaciones Recibidas
             </h2>
             <div className="space-y-2">
-              {persona.capacitacionesRecibidas?.split('\n').map((capacitacion, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent">
-                  <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                  <span>{capacitacion}</span>
-                </div>
-              ))}
+              {persona.capacitacionesRecibidas?.split("\n").map(
+                (capacitacion, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
+                  >
+                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                    <span>{capacitacion}</span>
+                  </div>
+                )
+              )}
             </div>
           </motion.div>
         </div>
