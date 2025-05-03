@@ -9,9 +9,9 @@ import Header from "./utils/Header";
 import { menuSections } from "./hooks/menu-sections";
 
 import { lazyComponents } from "./config/lazy-components";
-import { MobileMenuButton } from "./components/layaut/MobileMenuButton";
-import { Sidebar } from "./components/layaut/Sidebar";
-import { AppRoutes } from "./components/layaut/AppRoutes";
+import { MobileMenuButton } from "./components/layout/MobileMenuButton";
+import { Sidebar } from "./components/layout/Sidebar";
+import { AppRoutes } from "./components/layout/AppRoutes";
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

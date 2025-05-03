@@ -1,76 +1,106 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  Plus, 
-  Search, 
-  Download, 
-  Pencil, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Download,
+  Pencil,
+  Trash2,
   Users,
   LayoutGrid,
   List,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
 } from "lucide-react";
 import PersonalModal from "./PersonalModal";
 import PersonalSingle from "./PersonalSingle";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { useDebounce } from "@/hooks/use-debounce";
 import { usePagination } from "@/hooks/use-pagination";
 
-const PersonalCard = React.memo(({ person, onView, onEdit, onDelete }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
-    onClick={() => onView(person)}
-  >
-    <div className="aspect-square relative">
-      <img 
-        className="w-full h-full object-cover"
-        alt={`Foto de ${person.nombre}`}
-        src={person.imagen || "https://images.unsplash.com/photo-1578390432942-d323db577792"}
-        loading="lazy"
-      />
-    </div>
-    <div className="p-4">
-      <h3 className="font-semibold">{person.nombre}</h3>
-      <p className="text-sm text-muted-foreground">{person.puesto}</p>
-      <p className="text-sm text-muted-foreground">{person.departamento}</p>
-      <div className="mt-4 flex justify-end space-x-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(person);
-          }}
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(person.id);
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  </motion.div>
-));
+interface Person {
+  id: number;
+  numero?: string;
+  nombre?: string;
+  puesto?: string;
+  departamento?: string;
+  imagen?: string;
+  email?: string;
+  telefono?: string;
+}
 
-const PersonalSkeletonCard = () => (
+interface PersonalCardProps {
+  person: Person;
+  onView: (person: Person) => void;
+  onEdit: (person: Person) => void;
+  onDelete: (id: number) => void;
+}
+
+const PersonalCard: React.FC<PersonalCardProps> = React.memo(
+  ({ person, onView, onEdit, onDelete }) => (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
+      onClick={() => onView(person)}
+    >
+      <div className="aspect-square relative">
+        <img
+          className="w-full h-full object-cover"
+          alt={`Foto de ${person.nombre}`}
+          src={
+            person.imagen ||
+            "https://images.unsplash.com/photo-1578390432942-d323db577792"
+          }
+          loading="lazy"
+        />
+      </div>
+      <div className="p-4">
+        <h3 className="font-semibold">{person.nombre}</h3>
+        <p className="text-sm text-muted-foreground">{person.puesto}</p>
+        <p className="text-sm text-muted-foreground">{person.departamento}</p>
+        <div className="mt-4 flex justify-end space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(person);
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(person.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  )
+);
+
+const PersonalSkeletonCard: React.FC = () => (
   <div className="bg-card border border-border rounded-lg overflow-hidden">
     <Skeleton className="aspect-square" />
     <div className="p-4 space-y-2">
@@ -83,43 +113,43 @@ const PersonalSkeletonCard = () => (
 
 function PersonalListing() {
   const { toast } = useToast();
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSingle, setShowSingle] = useState(false);
-  const [currentPerson, setCurrentPerson] = useState(null);
+  const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [personToDelete, setPersonToDelete] = useState(null);
-  const [personal, setPersonal] = useState([]);
+  const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
+  const [personal, setPersonal] = useState<Person[]>([]);
 
   useEffect(() => {
     loadPersonal();
   }, []);
 
-  const loadPersonal = () => {
+  const loadPersonal = useCallback(() => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const saved = localStorage.getItem("personal");
-      const data = saved ? JSON.parse(saved) : [];
+      const data = saved ? (JSON.parse(saved) as Person[]) : [];
       setPersonal(data);
     } catch (error) {
       console.error("Error loading personal:", error);
       toast({
         title: "Error",
         description: "No se pudo cargar la lista de personal",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const filteredPersonal = React.useMemo(() => {
-    return personal.filter(person =>
+  const filteredPersonal = useMemo(() => {
+    return personal.filter((person) =>
       person.nombre?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       person.puesto?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       person.departamento?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
@@ -127,38 +157,42 @@ function PersonalListing() {
   }, [personal, debouncedSearchTerm]);
 
   const {
-    items: paginatedPersonal,
+    paginatedData: paginatedPersonal,
     currentPage,
     totalPages,
     nextPage,
     previousPage,
     hasNextPage,
-    hasPreviousPage
+    hasPreviousPage,
   } = usePagination(filteredPersonal, viewMode === "grid" ? 12 : 10);
 
-  const handleSave = async (personData) => {
+  const handleSave = async (personData: Omit<Person, 'id' | 'numero'>) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      let updatedPersonal;
+      let updatedPersonal: Person[];
       if (selectedPerson) {
-        updatedPersonal = personal.map(p => 
-          p.id === selectedPerson.id ? { ...personData, id: selectedPerson.id } : p
+        updatedPersonal = personal.map((p) =>
+          p.id === selectedPerson.id
+            ? { ...personData, id: selectedPerson.id, numero: selectedPerson.numero }
+            : p
         );
         toast({
           title: "Registro actualizado",
-          description: "Los datos del personal han sido actualizados exitosamente"
+          description: "Los datos del personal han sido actualizados exitosamente",
         });
       } else {
         const date = new Date();
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        const numero = `P${year}${month}-${random}`;
-        
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const random = Math.floor(Math.random() * 1000)
+          .toString()
+          .padStart(3, "0");
+        const numero = `P${year}<span class="math-inline">\{month\}\-</span>{random}`;
+
         updatedPersonal = [...personal, { ...personData, id: Date.now(), numero }];
         toast({
           title: "Registro creado",
-          description: "Se ha agregado un nuevo registro de personal"
+          description: "Se ha agregado un nuevo registro de personal",
         });
       }
       setPersonal(updatedPersonal);
@@ -170,36 +204,36 @@ function PersonalListing() {
       toast({
         title: "Error",
         description: "Ocurrió un error al guardar los datos",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEdit = (person) => {
+  const handleEdit = (person: Person) => {
     setSelectedPerson(person);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    const personToDelete = personal.find(p => p.id === id);
-    setPersonToDelete(personToDelete);
+  const handleDelete = (id: number) => {
+    const personToDelete = personal.find((p) => p.id === id);
+    setPersonToDelete(personToDelete ?? null);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
     if (!personToDelete) return;
-    
+
     try {
-      const updatedPersonal = personal.filter(p => p.id !== personToDelete.id);
+      const updatedPersonal = personal.filter((p) => p.id !== personToDelete.id);
       setPersonal(updatedPersonal);
       localStorage.setItem("personal", JSON.stringify(updatedPersonal));
       toast({
         title: "Registro eliminado",
-        description: "El registro ha sido eliminado exitosamente"
+        description: "El registro ha sido eliminado exitosamente",
       });
-      
+
       if (showSingle) {
         setShowSingle(false);
       }
@@ -208,7 +242,7 @@ function PersonalListing() {
       toast({
         title: "Error",
         description: "No se pudo eliminar el registro",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setDeleteDialogOpen(false);
@@ -216,7 +250,7 @@ function PersonalListing() {
     }
   };
 
-  const handleViewPerson = (person) => {
+  const handleViewPerson = (person: Person) => {
     setCurrentPerson(person);
     setShowSingle(true);
   };
@@ -263,7 +297,7 @@ function PersonalListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -284,13 +318,13 @@ function PersonalListing() {
           // Skeleton Loading
           viewMode === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
+              {Array.from({ length: 8 }).map((_, i) => (
                 <PersonalSkeletonCard key={i} />
               ))}
             </div>
           ) : (
             <div className="bg-card border border-border rounded-lg overflow-hidden">
-              {[...Array(5)].map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="border-b border-border p-4">
                   <div className="flex items-center space-x-4">
                     <Skeleton className="h-10 w-10 rounded-full" />
@@ -307,7 +341,7 @@ function PersonalListing() {
           <>
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {paginatedPersonal.map((person) => (
+                {paginatedPersonal.map((person: any) => (
                   <PersonalCard
                     key={person.id}
                     person={person}
@@ -325,14 +359,18 @@ function PersonalListing() {
                       <th className="text-left p-4">Foto</th>
                       <th className="text-left p-4">Nombre</th>
                       <th className="text-left p-4 hidden md:table-cell">Puesto</th>
-                      <th className="text-left p-4 hidden lg:table-cell">Departamento</th>
+                      <th className="text-left p-4 hidden lg:table-cell">
+                        Departamento
+                      </th>
                       <th className="text-left p-4 hidden xl:table-cell">Email</th>
-                      <th className="text-left p-4 hidden xl:table-cell">Teléfono</th>
+                      <th className="text-left p-4 hidden xl:table-cell">
+                        Teléfono
+                      </th>
                       <th className="text-right p-4">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedPersonal.map((person) => (
+                    {paginatedPersonal.map((person: any) => (
                       <motion.tr
                         key={person.id}
                         initial={{ opacity: 0 }}
@@ -343,10 +381,13 @@ function PersonalListing() {
                       >
                         <td className="p-4">
                           <div className="w-10 h-10 rounded-full overflow-hidden">
-                            <img 
+                            <img
                               className="w-full h-full object-cover"
                               alt={`Foto de ${person.nombre}`}
-                              src={person.imagen || "https://images.unsplash.com/photo-1578390432942-d323db577792"}
+                              src={
+                                person.imagen ||
+                                "https://images.unsplash.com/photo-1578390432942-d323db577792"
+                              }
                               loading="lazy"
                             />
                           </div>
@@ -357,10 +398,16 @@ function PersonalListing() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </td>
-                        <td className="p-4 hidden md:table-cell">{person.puesto}</td>
-                        <td className="p-4 hidden lg:table-cell">{person.departamento}</td>
+                        <td className="p-4 hidden md:table-cell">
+                          {person.puesto}
+                        </td>
+                        <td className="p-4 hidden lg:table-cell">
+                          {person.departamento}
+                        </td>
                         <td className="p-4 hidden xl:table-cell">{person.email}</td>
-                        <td className="p-4 hidden xl:table-cell">{person.telefono}</td>
+                        <td className="p-4 hidden xl:table-cell">
+                          {person.telefono}
+                        </td>
                         <td className="p-4 text-right">
                           <Button
                             variant="ghost"
@@ -391,7 +438,8 @@ function PersonalListing() {
                   <div className="text-center py-12">
                     <Users className="mx-auto h-12 w-12 text-muted-foreground" />
                     <p className="mt-4 text-muted-foreground">
-                      No hay personal registrado. Haz clic en "Nuevo Personal" para comenzar.
+                      No hay personal registrado. Haz clic en "Nuevo Personal"
+                      para comenzar.
                     </p>
                   </div>
                 )}
@@ -407,6 +455,19 @@ function PersonalListing() {
                   onClick={previousPage}
                   disabled={!hasPreviousPage}
                 >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={!hasNextPage}
+                >
+                  Siguiente
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Anterior
                 </Button>
@@ -444,7 +505,8 @@ function PersonalListing() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el registro de {personToDelete?.nombre}.
+              Esta acción no se puede deshacer. Se eliminará permanentemente el
+              registro de {personToDelete?.nombre}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

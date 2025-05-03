@@ -16,7 +16,7 @@ export const lazyComponents = {
     component.catch((error) => console.error("Error cargando MejorasListing:", error));
     return component;
   }),
-  PersonalListing: lazy(() => import("../components/personal/PersonalListing")),
+  PersonalListing: lazy(() => import("@/components/personal/PersonalListing")),
   DepartamentosListing: lazy(() => import("../components/rrhh/DepartamentosListing")),
   PuestosListing: lazy(() => import("../components/rrhh/PuestosListing")),
   ProcesosListing: lazy(() => import("../components/procesos/ProcesosListing")),
