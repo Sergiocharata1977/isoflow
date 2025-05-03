@@ -1,44 +1,54 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  Plus, 
-  Search, 
-  Download, 
-  Pencil, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Download,
+  Pencil,
+  Trash2,
   Clipboard,
 } from "lucide-react";
 import PuntoNormaModal from "./PuntoNormaModal";
 
+type PuntoNorma = {
+  id: number;
+  titulo: string;
+  norma: string;
+  explicacion: string;
+};
+
 function PuntosNormaListing() {
   const { toast } = useToast();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPunto, setSelectedPunto] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedPunto, setSelectedPunto] = useState<PuntoNorma | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [puntosNorma, setPuntosNorma] = useState(() => {
+  const [puntosNorma, setPuntosNorma] = useState<PuntoNorma[]>(() => {
     const saved = localStorage.getItem("puntosNorma");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const handleSave = (puntoData) => {
-    let updatedPuntos;
+  const handleSave = (puntoData: Omit<PuntoNorma, "id">) => {
+    let updatedPuntos: PuntoNorma[];
     if (selectedPunto) {
-      updatedPuntos = puntosNorma.map(p => 
+      updatedPuntos = puntosNorma.map((p) =>
         p.id === selectedPunto.id ? { ...puntoData, id: selectedPunto.id } : p
       );
       toast({
         title: "Punto actualizado",
-        description: "Los datos del punto han sido actualizados exitosamente"
+        description: "Los datos del punto han sido actualizados exitosamente",
       });
     } else {
-      updatedPuntos = [...puntosNorma, { ...puntoData, id: Date.now() }];
+      const nuevoPunto: PuntoNorma = {
+        ...puntoData,
+        id: Date.now(),
+      };
+      updatedPuntos = [...puntosNorma, nuevoPunto];
       toast({
         title: "Punto creado",
-        description: "Se ha agregado un nuevo punto exitosamente"
+        description: "Se ha agregado un nuevo punto exitosamente",
       });
     }
     setPuntosNorma(updatedPuntos);
@@ -47,22 +57,22 @@ function PuntosNormaListing() {
     setSelectedPunto(null);
   };
 
-  const handleEdit = (punto) => {
+  const handleEdit = (punto: PuntoNorma) => {
     setSelectedPunto(punto);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    const updatedPuntos = puntosNorma.filter(p => p.id !== id);
+  const handleDelete = (id: number) => {
+    const updatedPuntos = puntosNorma.filter((p) => p.id !== id);
     setPuntosNorma(updatedPuntos);
     localStorage.setItem("puntosNorma", JSON.stringify(updatedPuntos));
     toast({
       title: "Punto eliminado",
-      description: "El punto ha sido eliminado exitosamente"
+      description: "El punto ha sido eliminado exitosamente",
     });
   };
 
-  const filteredPuntos = puntosNorma.filter(punto =>
+  const filteredPuntos = puntosNorma.filter((punto) =>
     punto.titulo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -83,7 +93,7 @@ function PuntosNormaListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
