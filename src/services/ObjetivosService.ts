@@ -2,12 +2,12 @@ import { ObjetivoModel } from "@/models/objetivo-model";
 import db from "./db";
 
 export class ObjetivoService {
-    static async create(data: ObjetivoModel) {
+    static async create(data: ObjetivoModel): Promise<ObjetivoModel> {
         try {
             const exists = await db.execute("SELECT 1 FROM objetivos WHERE codigo = ?", [data.codigo]);
             if (exists.rows.length > 0) throw new Error("El código ya existe");
 
-            await db.execute(
+            const result = await db.execute(
                 `INSERT INTO objetivos (
           codigo, titulo, descripcion, responsable, procesos_relacionados
         ) VALUES (?, ?, ?, ?, ?)`,
@@ -20,7 +20,7 @@ export class ObjetivoService {
                 ]
             );
 
-            return { success: true, message: "Objetivo creado correctamente" };
+            return result as any;
         } catch (error) {
             console.error("Error creando objetivo:", error);
             throw error;
@@ -67,12 +67,12 @@ export class ObjetivoService {
         }
     }
 
-    static async update(id: number, data: Partial<ObjetivoModel>) {
+    static async update(id: number, data: Partial<ObjetivoModel>): Promise<ObjetivoModel> {
         try {
             const original = await this.getById(id);
             if (!original) throw new Error("Objetivo no encontrado");
 
-            await db.execute(
+            const result = await db.execute(
                 `UPDATE objetivos SET
           codigo = ?, titulo = ?, descripcion = ?, responsable = ?, procesos_relacionados = ?
         WHERE id = ?`,
@@ -86,7 +86,7 @@ export class ObjetivoService {
                 ]
             );
 
-            return { success: true, message: "Objetivo actualizado correctamente" };
+            return result as any;
         } catch (error) {
             console.error("Error actualizando objetivo:", error);
             throw error;
