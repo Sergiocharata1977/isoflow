@@ -101,7 +101,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{auditoria ? "Editar Auditoría" : "Nueva Auditoría"}</DialogTitle>
         </DialogHeader>
