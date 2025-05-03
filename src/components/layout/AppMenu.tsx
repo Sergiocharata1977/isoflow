@@ -112,8 +112,8 @@ const AppMenu: React.FC<AppMenuProps> = ({
         <Button
           variant={isActive ? "default" : "ghost"}
           className={`w-full justify-start ${isActive
-              ? "bg-green-500 hover:bg-green-600 text-white"
-              : "text-gray-300 hover:text-white hover:bg-gray-800"
+            ? "bg-green-500 hover:bg-green-600 text-white"
+            : "text-gray-300 hover:text-white hover:bg-gray-800"
             }`}
           onClick={() => {
             if (isGroup) {
@@ -147,8 +147,8 @@ const AppMenu: React.FC<AppMenuProps> = ({
                   key={item.id}
                   variant={itemIsActive ? "default" : "ghost"}
                   className={`w-full justify-start ${itemIsActive
-                      ? "bg-green-500 hover:bg-green-600 text-white"
-                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                    ? "bg-green-500 hover:bg-green-600 text-white"
+                    : "text-gray-300 hover:text-white hover:bg-gray-800"
                     }`}
                   onClick={() => {
                     setSelectedSection(item.id);

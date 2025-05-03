@@ -11,7 +11,7 @@ export const AppRoutes = () => (
     <Route path="/departamentos" element={<lazyComponents.DepartamentosListing />} />
     <Route path="/puestos" element={<lazyComponents.PuestosListing />} />
     <Route path="/procesos" element={<lazyComponents.ProcesosListing />} />
-    <Route path="/objetivos" element={<lazyComponents.ObjetivosListing2 />} />
+    <Route path="/objetivos" element={<lazyComponents.ObjetivosListing />} />
     <Route path="/indicadores" element={<lazyComponents.IndicadoresListing2 />} />
     <Route path="/mediciones" element={<lazyComponents.MedicionesListing2 />} />
     <Route path="/documentos" element={<lazyComponents.DocumentosListing />} />
