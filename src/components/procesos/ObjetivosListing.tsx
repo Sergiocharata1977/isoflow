@@ -49,7 +49,6 @@ function ObjetivosListing() {
   };
 
   const handleEditObjetivo = (objetivo: ObjetivoModel) => {
-    console.log(objetivo);
     setCurrentObjetivo(objetivo);
     setModalOpen(true);
   };

@@ -27,8 +27,8 @@ import AuditoriaSingle from "./AuditoriaSingle";
 import { jsPDF } from "jspdf";
 import 'jspdf-autotable';
 import { AuditoriaModel } from "@/models/auditoria-model";
-import { ProcesoModel } from "@/models/proceso-model";
 import { AuditoriasService } from "@/services/AuditoriasService";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -42,11 +42,7 @@ function AuditoriasListing() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [auditorias, setAuditorias] = useState<AuditoriaModel[]>([]);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  const [procesos, setProcesos] = useState<ProcesoModel[]>([]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   useEffect(() => {
     const fetchAuditorias = async () => {
@@ -63,32 +59,6 @@ function AuditoriasListing() {
 
     fetchAuditorias();
   }, []);
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Cargar auditorías
-      const savedAuditorias = localStorage.getItem("auditorias");
-      const auditoriasData = savedAuditorias ? JSON.parse(savedAuditorias) : [];
-      setAuditorias(auditoriasData);
-
-      // Cargar procesos para el filtro
-      const savedProcesos = localStorage.getItem("procesos");
-      const procesosData = savedProcesos ? JSON.parse(savedProcesos) : [];
-      setProcesos(procesosData);
-
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSave = async (auditoriaData: AuditoriaModel) => {
     try {
@@ -130,26 +100,39 @@ function AuditoriasListing() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    try {
-      const updatedAuditorias = auditorias.filter(a => a.id !== id);
-      setAuditorias(updatedAuditorias);
-      localStorage.setItem("auditorias", JSON.stringify(updatedAuditorias));
-      toast({
-        title: "Auditoría eliminada",
-        description: "La auditoría ha sido eliminada exitosamente"
-      });
+  const handleDelete = async (auditoria: AuditoriaModel) => {
+    const accepted = await confirm({
+      title: 'Eliminar auditoria',
+      message: '¿Seguro que deseas eliminar esta auditoria?',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+    });
 
-      if (showSingle) {
-        setShowSingle(false);
+    if (accepted) {
+      try {
+        await AuditoriasService.delete(auditoria.id!);
+
+        setAuditorias(prev =>
+          prev.filter(a => a.id !== auditoria.id)
+        );
+
+        toast({
+          title: "Auditoría eliminada",
+          description: "La auditoría ha sido eliminada exitosamente"
+        });
+
+        if (showSingle) {
+          setShowSingle(false);
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar la auditoría",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error deleting auditoría:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la auditoría",
-        variant: "destructive"
-      });
     }
   };
 
@@ -198,25 +181,30 @@ function AuditoriasListing() {
     doc.save('auditorias.pdf');
   };
 
-  const filteredAuditorias = auditorias.filter(auditoria =>
+  const filteredAuditorias: AuditoriaModel[] = auditorias.filter(auditoria =>
   (auditoria.responsable?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     auditoria.objetivo?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Datos para gráficos
-  const estadoData = [
-    { name: 'Planificada', value: auditorias.filter(a => a.estado === 'Planificada').length },
-    { name: 'En Ejecución', value: auditorias.filter(a => a.estado === 'En Ejecución').length },
-    { name: 'Terminada', value: auditorias.filter(a => a.estado === 'Terminada').length },
-    { name: 'Controlada', value: auditorias.filter(a => a.estado === 'Controlada').length }
-  ];
+  const estadoData: {
+    name: string;
+    value: number;
+  }[] = [
+      { name: 'Planificada', value: auditorias.filter(a => a.estado === 'Planificada').length },
+      { name: 'En Ejecución', value: auditorias.filter(a => a.estado === 'En Ejecución').length },
+      { name: 'Terminada', value: auditorias.filter(a => a.estado === 'Terminada').length },
+      { name: 'Controlada', value: auditorias.filter(a => a.estado === 'Controlada').length }
+    ];
 
-  const calificacionData = [
-    { name: 'Muy Bueno', value: 0 },
-    { name: 'Bueno', value: 0 },
-    { name: 'Regular', value: 0 },
-    { name: 'Malo', value: 0 }
-  ];
+  const calificacionData: {
+    name: string;
+    value: number;
+  }[] = [
+      { name: 'Muy Bueno', value: 0 },
+      { name: 'Bueno', value: 0 },
+      { name: 'Regular', value: 0 },
+      { name: 'Malo', value: 0 }
+    ];
 
   auditorias.forEach(auditoria => {
     auditoria.puntos?.forEach(punto => {
@@ -233,7 +221,7 @@ function AuditoriasListing() {
         auditoria={currentAuditoria}
         onBack={() => setShowSingle(false)}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={() => handleDelete(currentAuditoria)}
       />
     );
   }
@@ -341,12 +329,13 @@ function AuditoriasListing() {
                       <Button variant="outline" onClick={() => handleEdit(auditoria)}>
                         <Pencil />
                       </Button>
-                      <Button variant="outline" onClick={() => handleDelete(auditoria.id!)}>
+                      <Button variant="outline" onClick={() => handleDelete(auditoria)}>
                         <Trash2 />
                       </Button>
                       <Button variant="outline" onClick={() => handleViewAuditoria(auditoria)}>
                         <ClipboardCheck />
                       </Button>
+                      {ConfirmDialog}
                     </td>
                   </tr>
                 ))}
