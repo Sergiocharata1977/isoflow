@@ -11,12 +11,6 @@ import { UsersService } from "@/services/UsersService";
 import { UserModel } from "@/models/user-model";
 import { ProcesosService } from "@/services/ProcesosService";
 
-
-interface Persona {
-  id: number;
-  nombre: string;
-}
-
 interface AuditoriaModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,11 +30,6 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     estado: "Planificada",
     puntos: [],
     comentarios_finales: "",
-  });
-
-  const [personal, setPersonal] = useState<Persona[]>(() => {
-    const saved = localStorage.getItem("personal");
-    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -156,9 +145,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
             <select
               id="responsable"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={formData.responsable}
+              value={formData.responsable_id ?? ''}
               onChange={(e) =>
-                setFormData({ ...formData, responsable: e.target.value })
+                setFormData({ ...formData, responsable_id: Number(e.target.value) })
               }
               required
             >
@@ -216,9 +205,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
               required
             >
               <option value="Planificada">Planificada</option>
-              <option value="En Ejecución">En Ejecución</option>
-              <option value="Terminada">Terminada</option>
-              <option value="Controlada">Controlada</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Finalizada">Finalizada</option>
+              <option value="Cancelada">Cancelada</option>
             </select>
           </div>
 

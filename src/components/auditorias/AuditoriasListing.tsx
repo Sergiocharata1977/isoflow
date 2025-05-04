@@ -7,7 +7,6 @@ import {
   Download,
   Pencil,
   Trash2,
-  ClipboardCheck,
   PieChart,
 } from "lucide-react";
 import {
@@ -29,18 +28,20 @@ import 'jspdf-autotable';
 import { AuditoriaModel } from "@/models/auditoria-model";
 import { AuditoriasService } from "@/services/AuditoriasService";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { UsersService } from "@/services/UsersService";
+import { UserModel } from "@/models/user-model";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 function AuditoriasListing() {
   const { toast } = useToast();
+  const [auditorias, setAuditorias] = useState<AuditoriaModel[]>([]);
+  const [users, setUsers] = useState<UserModel[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedAuditoria, setSelectedAuditoria] = useState<AuditoriaModel | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showSingle, setShowSingle] = useState<boolean>(false);
-  const [currentAuditoria, setCurrentAuditoria] = useState<AuditoriaModel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [auditorias, setAuditorias] = useState<AuditoriaModel[]>([]);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const { confirm, ConfirmDialog } = useConfirmDialog();
 
@@ -58,6 +59,19 @@ function AuditoriasListing() {
     };
 
     fetchAuditorias();
+  }, []);
+
+  useEffect(() => {
+    const users = async () => {
+      try {
+        const data = await UsersService.getAll();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error al cargar los usuarios:", error);
+      }
+    }
+
+    users();
   }, []);
 
   const handleSave = async (auditoriaData: AuditoriaModel) => {
@@ -136,11 +150,6 @@ function AuditoriasListing() {
     }
   };
 
-  const handleViewAuditoria = (auditoria: AuditoriaModel) => {
-    setCurrentAuditoria(auditoria);
-    setShowSingle(true);
-  };
-
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case 'Planificada':
@@ -191,9 +200,9 @@ function AuditoriasListing() {
     value: number;
   }[] = [
       { name: 'Planificada', value: auditorias.filter(a => a.estado === 'Planificada').length },
-      { name: 'En Ejecución', value: auditorias.filter(a => a.estado === 'En Ejecución').length },
-      { name: 'Terminada', value: auditorias.filter(a => a.estado === 'Terminada').length },
-      { name: 'Controlada', value: auditorias.filter(a => a.estado === 'Controlada').length }
+      { name: 'En Proceso', value: auditorias.filter(a => a.estado === 'En Proceso').length },
+      { name: 'Finalizada', value: auditorias.filter(a => a.estado === 'Finalizada').length },
+      { name: 'Cancelada', value: auditorias.filter(a => a.estado === 'Cancelada').length }
     ];
 
   const calificacionData: {
@@ -215,17 +224,6 @@ function AuditoriasListing() {
     });
   });
 
-  if (showSingle && currentAuditoria) {
-    return (
-      <AuditoriaSingle
-        auditoria={currentAuditoria}
-        onBack={() => setShowSingle(false)}
-        onEdit={handleEdit}
-        onDelete={() => handleDelete(currentAuditoria)}
-      />
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -245,7 +243,11 @@ function AuditoriasListing() {
             Exportar PDF
           </Button>
 
-          <Button variant="default" onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+          <Button variant="default" onClick={() => {
+            setSelectedAuditoria(null);
+            setIsModalOpen(true);
+          }}
+            className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Nueva Auditoría
           </Button>
@@ -314,17 +316,28 @@ function AuditoriasListing() {
               </thead>
               <tbody>
                 {filteredAuditorias.map((auditoria) => (
+
                   <tr key={auditoria.id}>
                     <th>{auditoria.id}</th>
+
                     <td>{auditoria.numero_auditoria}</td>
+
                     <td>{auditoria.fecha_programada}</td>
-                    <td>{auditoria.responsable}</td>
+
+                    <td>
+                      {
+                        users.find(user => user.id === auditoria.responsable_id)?.full_name || 'Sin responsable'
+                      }
+                    </td>
+
                     <td>
                       <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getEstadoColor(auditoria.estado)}`}>
                         {auditoria.estado}
                       </span>
                     </td>
+
                     <td>{auditoria.objetivo}</td>
+
                     <td className="flex gap-2">
                       <Button variant="outline" onClick={() => handleEdit(auditoria)}>
                         <Pencil />
@@ -332,12 +345,10 @@ function AuditoriasListing() {
                       <Button variant="outline" onClick={() => handleDelete(auditoria)}>
                         <Trash2 />
                       </Button>
-                      <Button variant="outline" onClick={() => handleViewAuditoria(auditoria)}>
-                        <ClipboardCheck />
-                      </Button>
                       {ConfirmDialog}
                     </td>
                   </tr>
+
                 ))}
               </tbody>
             </table>
