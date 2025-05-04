@@ -150,19 +150,15 @@ function AuditoriasListing() {
     }
   };
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'Planificada':
-        return 'bg-blue-100 text-blue-800';
-      case 'En Ejecución':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Terminada':
-        return 'bg-green-100 text-green-800';
-      case 'Controlada':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const estadoColors: Record<string, string> = {
+    Planificada: 'bg-blue-100 text-blue-800',
+    'En Proceso': 'bg-yellow-100 text-yellow-800',
+    Finalizada: 'bg-green-100 text-green-800',
+    Cancelada: 'bg-red-100 text-red-800',
+  };
+
+  const getEstadoColor = (estado: string): string => {
+    return estadoColors[estado] || 'bg-gray-100 text-gray-800';
   };
 
   const exportToPDF = () => {
