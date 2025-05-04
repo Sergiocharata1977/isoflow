@@ -7,10 +7,10 @@ export class ObjetivoService {
             const exists = await db.execute("SELECT 1 FROM objetivos WHERE codigo = ?", [data.codigo]);
             if (exists.rows.length > 0) throw new Error("El código ya existe");
 
-            const result = await db.execute(
+            await db.execute(
                 `INSERT INTO objetivos (
-          codigo, titulo, descripcion, responsable, procesos_relacionados
-        ) VALUES (?, ?, ?, ?, ?)`,
+              codigo, titulo, descripcion, responsable, procesos_relacionados
+            ) VALUES (?, ?, ?, ?, ?)`,
                 [
                     data.codigo,
                     data.titulo,
@@ -20,7 +20,23 @@ export class ObjetivoService {
                 ]
             );
 
-            return result as any;
+            const createdObjetivo = await db.execute("SELECT * FROM objetivos  ORDER BY created_at DESC LIMIT 1");
+            const newObjetivo = createdObjetivo.rows[0];
+
+            if (!newObjetivo) {
+                throw new Error("No se pudo recuperar el objetivo recién creado de la base de datos.");
+            }
+
+            return {
+                id: Number(newObjetivo.id),
+                codigo: String(newObjetivo.codigo),
+                titulo: String(newObjetivo.titulo),
+                descripcion: String(newObjetivo.descripcion),
+                responsable: String(newObjetivo.responsable),
+                procesos_relacionados: String(newObjetivo.procesos_relacionados),
+                created_at: String(newObjetivo.created_at),
+            };
+
         } catch (error) {
             console.error("Error creando objetivo:", error);
             throw error;
@@ -72,23 +88,32 @@ export class ObjetivoService {
             const original = await this.getById(id);
             if (!original) throw new Error("Objetivo no encontrado");
 
-            const result = await db.execute(
+            const updateData: Partial<ObjetivoModel> = {
+                codigo: data.codigo ? String(data.codigo) : original.codigo,
+                titulo: data.titulo ? String(data.titulo) : original.titulo,
+                descripcion: data.descripcion ? String(data.descripcion) : original.descripcion,
+                responsable: data.responsable ? String(data.responsable) : original.responsable,
+                procesos_relacionados: data.procesos_relacionados ? String(data.procesos_relacionados) : original.procesos_relacionados,
+            };
+
+            await db.execute(
                 `UPDATE objetivos SET
-          codigo = ?, titulo = ?, descripcion = ?, responsable = ?, procesos_relacionados = ?
-        WHERE id = ?`,
+              codigo = ?, titulo = ?, descripcion = ?, responsable = ?, procesos_relacionados = ?
+            WHERE id = ?`,
                 [
-                    data.codigo ?? original.codigo,
-                    data.titulo ?? original.titulo,
-                    data.descripcion ?? original.descripcion,
-                    data.responsable ?? original.responsable,
-                    data.procesos_relacionados ?? original.procesos_relacionados,
+                    updateData.codigo,
+                    updateData.titulo,
+                    updateData.descripcion,
+                    updateData.responsable,
+                    updateData.procesos_relacionados,
                     id,
                 ]
             );
 
-            return result as any;
+            const updatedObject = await this.getById(id);
+            return updatedObject!;
+
         } catch (error) {
-            console.error("Error actualizando objetivo:", error);
             throw error;
         }
     }

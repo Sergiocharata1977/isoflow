@@ -1,9 +1,12 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Edit } from "lucide-react";
+import { Search, Edit, Delete } from "lucide-react";
 import ObjetivoModal from "./ObjetivoModal";
 import { ObjetivoService } from "@/services/ObjetivosService";
 import { ObjetivoModel } from "@/models/objetivo-model";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function ObjetivosListing() {
   const [objetivos, setObjetivos] = useState<ObjetivoModel[]>([]);
@@ -11,14 +14,6 @@ function ObjetivosListing() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [currentObjetivo, setCurrentObjetivo] = useState<ObjetivoModel | null>(null);
-
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   setTimeout(() => {
-  //     setObjetivos(objetivosEjemplo);
-  //     setIsLoading(false);
-  //   }, 500);
-  // }, []);
 
   useEffect(() => {
     const fetchObjetivos = async () => {
@@ -36,7 +31,6 @@ function ObjetivosListing() {
     fetchObjetivos();
   }, []);
 
-
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -46,6 +40,8 @@ function ObjetivosListing() {
       field?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   const handleNewObjetivo = () => {
     setCurrentObjetivo(null);
@@ -57,16 +53,42 @@ function ObjetivosListing() {
     setModalOpen(true);
   };
 
+  const handleDelete = async (objetivo: ObjetivoModel) => {
+    const accepted = await confirm({
+      title: 'Eliminar objetivo',
+      message: '¿Seguro que deseas eliminar este objetivo?',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+    });
+
+    if (accepted) {
+      try {
+        const data = await ObjetivoService.delete(objetivo.id!);
+
+        if (data.success) {
+          setObjetivos(prevObjetivos => prevObjetivos.filter(item => item.id !== objetivo.id));
+
+          toast.success('Objetivo eliminado correctamente');
+
+        } else {
+          toast.error('Error al eliminar el objetivo');
+        }
+      } catch (error) {
+        toast.error('Hubo un error al eliminar el objetivo');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const handleSaveObjetivo = (objetivoData: Omit<ObjetivoModel, "id" | "estado">) => {
     if (currentObjetivo) {
-      // Editar
       setObjetivos((prev) =>
         prev.map((obj) =>
           obj.id === currentObjetivo.id ? { ...obj, ...objetivoData } : obj
         )
       );
     } else {
-      // Crear nuevo
       const newObjetivo: ObjetivoModel = {
         ...objetivoData,
         id: Date.now(),
@@ -78,10 +100,12 @@ function ObjetivosListing() {
 
   return (
     <div className="p-8">
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Objetivos de Calidad</h2>
         <Button onClick={handleNewObjetivo}>+ Nuevo Objetivo</Button>
       </div>
+
       <div className="mb-6">
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -93,6 +117,7 @@ function ObjetivosListing() {
           />
         </div>
       </div>
+
       <div>
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
@@ -111,7 +136,9 @@ function ObjetivosListing() {
                     <p className="text-sm text-muted-foreground mt-1">
                       {obj.descripcion}
                     </p>
+
                     <div className="grid grid-cols-2 gap-4 mt-4">
+
                       <div>
                         <p className="text-sm">
                           <b>Código:</b> {obj.codigo}
@@ -120,12 +147,15 @@ function ObjetivosListing() {
                           <b>Responsable:</b> {obj.responsable}
                         </p>
                       </div>
+
                       <div>
                         <p className="text-sm">
                           <b>Procesos:</b> {obj.procesos_relacionados}
                         </p>
                       </div>
+
                     </div>
+
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -135,6 +165,15 @@ function ObjetivosListing() {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(obj)}
+                    >
+                      <Delete className="h-4 w-4" />
+                    </Button>
+                    {ConfirmDialog}
                   </div>
                 </div>
               </div>
@@ -154,6 +193,7 @@ function ObjetivosListing() {
         onSave={handleSaveObjetivo}
         objetivo={currentObjetivo}
       />
+
     </div>
   );
 }

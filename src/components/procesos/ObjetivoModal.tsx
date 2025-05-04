@@ -26,6 +26,7 @@ const ObjetivoModal: React.FC<ObjetivoModalProps> = ({
   onSave,
   objetivo,
 }) => {
+
   const [formData, setFormData] = useState<ObjetivoModel>({
     titulo: "",
     codigo: "",
@@ -33,6 +34,7 @@ const ObjetivoModal: React.FC<ObjetivoModalProps> = ({
     responsable: "",
     procesos_relacionados: "",
   });
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,8 +52,6 @@ const ObjetivoModal: React.FC<ObjetivoModalProps> = ({
     }
   }, [objetivo]);
 
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -60,17 +60,14 @@ const ObjetivoModal: React.FC<ObjetivoModalProps> = ({
       let savedObjetivo: ObjetivoModel; // Changed type here
       if (objetivo?.id) {
         savedObjetivo = await ObjetivoService.update(objetivo.id, formData);
-        alert(`Objetivo actualizado correctamente con ID: ${savedObjetivo.id}`);
       } else {
         savedObjetivo = await ObjetivoService.create(formData);
-        alert(`Objetivo creado correctamente con ID: ${savedObjetivo.id}`); // Show ID
       }
       if (onSave) {
         onSave(savedObjetivo);
       }
       onClose();
     } catch (err: any) {
-      //  Display error to the user.
       setError(err.message || "Error al guardar");
       alert(err.message || "Error al guardar");
     } finally {
