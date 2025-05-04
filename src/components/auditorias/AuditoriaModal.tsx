@@ -23,14 +23,14 @@ interface AuditoriaModalProps {
 
 function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalProps) {
   const [formData, setFormData] = useState<AuditoriaModel>({
-    numero: "",
+    numero_auditoria: "",
     fecha_programada: "",
-    responsable: "",
+    responsable_id: 0,
     objetivo: "",
-    procesos_evaluar: "",
+    proceso_id: 0,
     estado: "Planificada",
     puntos: [],
-    comentarios_finales: ""
+    comentarios_finales: "",
   });
 
   const [personal, setPersonal] = useState<Persona[]>(() => {
@@ -47,19 +47,15 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     if (auditoria) {
       setFormData(auditoria);
     } else {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       setFormData({
-        numero: `A${year}${month}-${random}`,
+        numero_auditoria: "",
         fecha_programada: "",
-        responsable: "",
+        responsable_id: 0,
         objetivo: "",
-        procesos_evaluar: "",
+        proceso_id: 0,
         estado: "Planificada",
         puntos: [],
-        comentarios_finales: ""
+        comentarios_finales: "",
       });
     }
   }, [auditoria]);
@@ -68,7 +64,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     setFormData(prev => ({
       ...prev,
       puntos: [
-        ...prev.puntos,
+        ...prev.puntos!,
         {
           punto_norma: "",
           calificacion: "Regular",
@@ -81,14 +77,14 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
   const removePuntoEvaluado = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      puntos: prev.puntos.filter((_, i) => i !== index)
+      puntos: prev.puntos?.filter((_, i) => i !== index)
     }));
   };
 
   const updatePuntoEvaluado = (index: number, field: keyof PuntoEvaluadoModel, value: string) => {
     setFormData(prev => ({
       ...prev,
-      puntos: prev.puntos.map((punto, i) =>
+      puntos: prev.puntos?.map((punto, i) =>
         i === index ? { ...punto, [field]: value } : punto
       )
     }));
@@ -111,7 +107,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="numero">Número de Auditoría</Label>
-              <Input id="numero" value={formData.numero} disabled />
+              <Input id="numero" value={formData.numero_auditoria} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fecha_programada">Fecha Programada</Label>
@@ -165,9 +161,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
             <select
               id="procesos_evaluar"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={formData.procesos_evaluar}
+              value={formData.proceso_id}
               onChange={(e) =>
-                setFormData({ ...formData, procesos_evaluar: e.target.value })
+                setFormData({ ...formData, proceso_id: Number(e.target.value) })
               }
               required
             >
@@ -207,7 +203,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
               </Button>
             </div>
 
-            {formData.puntos.map((punto, index) => (
+            {formData.puntos?.map((punto, index) => (
               <div key={index} className="border border-border rounded-lg p-4 space-y-4">
                 <div className="flex justify-between items-start">
                   <h4 className="text-sm font-medium">Punto Evaluado #{index + 1}</h4>

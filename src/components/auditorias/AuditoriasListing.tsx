@@ -28,6 +28,7 @@ import { jsPDF } from "jspdf";
 import 'jspdf-autotable';
 import { AuditoriaModel } from "@/models/auditoria-model";
 import { ProcesoModel } from "@/models/proceso-model";
+import { AuditoriasService } from "@/services/AuditoriasService";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -41,11 +42,26 @@ function AuditoriasListing() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [auditorias, setAuditorias] = useState<AuditoriaModel[]>([]);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  const [procesoFiltro, setProcesoFiltro] = useState<string>("");
   const [procesos, setProcesos] = useState<ProcesoModel[]>([]);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const fetchAuditorias = async () => {
+      setIsLoading(true);
+      try {
+        const data = await AuditoriasService.getAll();
+        setAuditorias(data);
+      } catch (error) {
+        console.error("Error al cargar las auditorias:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAuditorias();
   }, []);
 
   const loadData = async () => {
@@ -92,7 +108,7 @@ function AuditoriasListing() {
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
         const numero = `A${year}${month}-${random}`;
 
-        updatedAuditorias = [...auditorias, { ...auditoriaData, id: Date.now(), numero }];
+        updatedAuditorias = [...auditorias, { ...auditoriaData, id: Date.now() }];
         toast({
           title: "Auditoría creada",
           description: "Se ha agregado una nueva auditoría exitosamente"
@@ -170,7 +186,7 @@ function AuditoriasListing() {
     // Table
     const tableColumn = ["Número", "Fecha", "Responsable", "Estado"];
     const tableRows = auditorias.map(auditoria => [
-      auditoria.numero,
+      auditoria.numero_auditoria,
       new Date(auditoria.fecha_programada).toLocaleDateString(),
       auditoria.responsable,
       auditoria.estado
@@ -186,10 +202,8 @@ function AuditoriasListing() {
   };
 
   const filteredAuditorias = auditorias.filter(auditoria =>
-    (auditoria.responsable?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      auditoria.objetivo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      auditoria.procesos_evaluar?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (!procesoFiltro || auditoria.procesos_evaluar === procesoFiltro)
+  (auditoria.responsable?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    auditoria.objetivo?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Datos para gráficos
@@ -237,38 +251,20 @@ function AuditoriasListing() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Auditorías</h2>
-        <Button
-          variant="default"
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus />
-          Agregar Auditoría
-        </Button>
-      </div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Auditorías</h2>
 
-      <div className="flex gap-4 items-center">
-        <input
-          type="text"
-          className="input input-bordered w-1/2"
-          placeholder="Buscar Auditorías"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          className="select select-bordered"
-          value={procesoFiltro}
-          onChange={(e) => setProcesoFiltro(e.target.value)}
-        >
-          <option value="">Filtrar por proceso</option>
-          {procesos.map((proceso) => (
-            <option key={proceso.id} value={proceso.titulo}>
-              {proceso.titulo}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportToPDF} className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Exportar PDF
+          </Button>
+
+          <Button variant="default" onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Nueva Auditoría
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -322,16 +318,28 @@ function AuditoriasListing() {
             <table className="table-auto w-full">
               <thead>
                 <tr>
-                  <th>Acciones</th>
+                  <th>ID</th>
+                  <th>Número de auditoría</th>
                   <th>Fecha Programada</th>
                   <th>Responsable</th>
                   <th>Estado</th>
                   <th>Objetivo</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAuditorias.map((auditoria) => (
                   <tr key={auditoria.id}>
+                    <th>{auditoria.id}</th>
+                    <td>{auditoria.numero_auditoria}</td>
+                    <td>{auditoria.fecha_programada}</td>
+                    <td>{auditoria.responsable}</td>
+                    <td>
+                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getEstadoColor(auditoria.estado)}`}>
+                        {auditoria.estado}
+                      </span>
+                    </td>
+                    <td>{auditoria.objetivo}</td>
                     <td className="flex gap-2">
                       <Button variant="outline" onClick={() => handleEdit(auditoria)}>
                         <Pencil />
@@ -343,14 +351,6 @@ function AuditoriasListing() {
                         <ClipboardCheck />
                       </Button>
                     </td>
-                    <td>{new Date(auditoria.fecha_programada).toLocaleDateString()}</td>
-                    <td>{auditoria.responsable}</td>
-                    <td>
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getEstadoColor(auditoria.estado)}`}>
-                        {auditoria.estado}
-                      </span>
-                    </td>
-                    <td>{auditoria.objetivo}</td>
                   </tr>
                 ))}
               </tbody>
@@ -358,11 +358,6 @@ function AuditoriasListing() {
           </div>
         </TabsContent>
       </Tabs>
-
-      <Button variant="default" onClick={exportToPDF}>
-        <Download className="mr-2" />
-        Exportar a PDF
-      </Button>
 
       <AuditoriaModal
         isOpen={isModalOpen}

@@ -1,13 +1,19 @@
 export interface AuditoriaModel {
     id?: number
-    numero: string;
+    numero_auditoria: string;
     fecha_programada: string;
-    responsable: string;
+    
+    responsable_id: number;
+    responsable?: any;
+
     objetivo: string;
-    procesos_evaluar: string;
-    estado: string;
-    puntos: PuntoEvaluadoModel[];
+    proceso_id: number
+
+    estado: string; // 'Planificada', 'En Proceso', 'Finalizada', 'Cancelada'
+    puntos?: PuntoEvaluadoModel[];
     comentarios_finales: string;
+    created_at?: string,
+    updated_at?: string,
 }
 
 export interface PuntoEvaluadoModel {
