@@ -57,7 +57,7 @@ const ObjetivoModal: React.FC<ObjetivoModalProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      let savedObjetivo: ObjetivoModel; // Changed type here
+      let savedObjetivo: ObjetivoModel;
       if (objetivo?.id) {
         savedObjetivo = await ObjetivoService.update(objetivo.id, formData);
       } else {

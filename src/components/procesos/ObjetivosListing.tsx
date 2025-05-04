@@ -49,6 +49,7 @@ function ObjetivosListing() {
   };
 
   const handleEditObjetivo = (objetivo: ObjetivoModel) => {
+    console.log(objetivo);
     setCurrentObjetivo(objetivo);
     setModalOpen(true);
   };
@@ -89,11 +90,7 @@ function ObjetivosListing() {
         )
       );
     } else {
-      const newObjetivo: ObjetivoModel = {
-        ...objetivoData,
-        id: Date.now(),
-      };
-      setObjetivos((prev) => [...prev, newObjetivo]);
+      setObjetivos((prev) => [...prev, objetivoData]);
     }
     setModalOpen(false);
   };
