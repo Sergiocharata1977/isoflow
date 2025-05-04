@@ -197,7 +197,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
             >
               <option value="">Seleccione un proceso</option>
               {procesos.map((proceso) => (
-                <option key={proceso.id} value={proceso.titulo}>
+                <option key={proceso.id} value={proceso.id}>
                   {proceso.titulo}
                 </option>
               ))}

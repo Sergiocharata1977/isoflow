@@ -92,30 +92,27 @@ function AuditoriasListing() {
 
   const handleSave = async (auditoriaData: AuditoriaModel) => {
     try {
-      let updatedAuditorias;
       if (selectedAuditoria) {
-        updatedAuditorias = auditorias.map(a =>
-          a.id === selectedAuditoria.id ? { ...auditoriaData, id: selectedAuditoria.id } : a
+        const updatedAuditoria = await AuditoriasService.update(selectedAuditoria.id!, auditoriaData);
+        const updatedAuditorias = auditorias.map(a =>
+          a.id === selectedAuditoria.id ? updatedAuditoria : a
         );
+        setAuditorias(updatedAuditorias);
+
         toast({
           title: "Auditoría actualizada",
           description: "Los datos de la auditoría han sido actualizados exitosamente"
         });
       } else {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        const numero = `A${year}${month}-${random}`;
+        const createdAuditoria = await AuditoriasService.create(auditoriaData);
+        setAuditorias([...auditorias, createdAuditoria]);
 
-        updatedAuditorias = [...auditorias, { ...auditoriaData, id: Date.now() }];
         toast({
           title: "Auditoría creada",
           description: "Se ha agregado una nueva auditoría exitosamente"
         });
       }
-      setAuditorias(updatedAuditorias);
-      localStorage.setItem("auditorias", JSON.stringify(updatedAuditorias));
+
       setIsModalOpen(false);
       setSelectedAuditoria(null);
     } catch (error) {
