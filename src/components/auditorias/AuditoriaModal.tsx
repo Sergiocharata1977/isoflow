@@ -7,6 +7,9 @@ import { Textarea } from "../ui/textarea";
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from "../ui/dialog";
 import { AuditoriaModel, PuntoEvaluadoModel } from "@/models/auditoria-model";
 import { ProcesoModel } from "@/models/proceso-model";
+import { UsersService } from "@/services/UsersService";
+import { UserModel } from "@/models/user-model";
+import { ProcesosService } from "@/services/ProcesosService";
 
 
 interface Persona {
@@ -22,6 +25,8 @@ interface AuditoriaModalProps {
 }
 
 function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalProps) {
+  const [users, setUsers] = useState<UserModel[]>([]);
+  const [procesos, setProcesos] = useState<ProcesoModel[]>([]);
   const [formData, setFormData] = useState<AuditoriaModel>({
     numero_auditoria: "",
     fecha_programada: "",
@@ -38,10 +43,31 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [procesos, setProcesos] = useState<ProcesoModel[]>(() => {
-    const saved = localStorage.getItem("procesos");
-    return saved ? JSON.parse(saved) : [];
-  });
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await UsersService.getAll();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error al cargar las auditorias:", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const fetchAuditorias = async () => {
+      try {
+        const data = await ProcesosService.getAll();
+        setProcesos(data);
+      } catch (error) {
+        console.error("Error al cargar las auditorias:", error);
+      }
+    };
+
+    fetchAuditorias();
+  }, []);
 
   useEffect(() => {
     if (auditoria) {
@@ -107,7 +133,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="numero">Número de Auditoría</Label>
-              <Input id="numero" value={formData.numero_auditoria} />
+              <Input id="numero" value={formData.numero_auditoria} onChange={(e) =>
+                setFormData({ ...formData, numero_auditoria: e.target.value })
+              } />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fecha_programada">Fecha Programada</Label>
@@ -135,9 +163,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
               required
             >
               <option value="">Seleccione un responsable</option>
-              {personal.map((persona) => (
-                <option key={persona.id} value={persona.nombre}>
-                  {persona.nombre}
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.full_name}
                 </option>
               ))}
             </select>
