@@ -89,7 +89,7 @@ function AuditoriasListing() {
         });
       } else {
         const createdAuditoria = await AuditoriasService.create(auditoriaData);
-        setAuditorias([...auditorias, createdAuditoria]);
+        setAuditorias([createdAuditoria, ...auditorias]);
 
         toast({
           title: "Auditoría creada",
