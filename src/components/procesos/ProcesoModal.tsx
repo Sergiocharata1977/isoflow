@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { ProcesoModel } from "@/models/proceso-model";
-import { ProcesosService } from "@/services/ProcesosService";
+import { toast } from "sonner";
 
 interface ProcesoModalProps {
   isOpen: boolean;

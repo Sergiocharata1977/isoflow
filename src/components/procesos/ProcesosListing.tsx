@@ -240,7 +240,7 @@ function ProcesosListing() {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      proceso.estado === "activo" 
+                      proceso.estado === "Activo" 
                         ? "bg-green-100 text-green-800"
                         : proceso.estado === "revision"
                         ? "bg-yellow-100 text-yellow-800"
