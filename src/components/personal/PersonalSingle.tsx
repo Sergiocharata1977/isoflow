@@ -24,6 +24,7 @@ export interface PersonalSingleProps {
     departamento?: string;
     full_name: string
     imagen?: string;
+    profile_image?: string;
     email?: string;
     telefono?: string;
     documentoIdentidad?: string;
@@ -86,7 +87,7 @@ function PersonalSingle({ persona, onBack, onEdit, onDelete }: PersonalSinglePro
               <div className="w-24 h-24 overflow-hidden rounded-lg">
                 <img
                   src={
-                    persona.imagen ||
+                    persona.profile_image ||
                     "https://images.unsplash.com/photo-1578390432942-d323db577792"
                   }
                   alt={`Foto de ${persona.full_name}`}

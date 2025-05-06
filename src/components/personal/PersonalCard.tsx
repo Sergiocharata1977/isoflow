@@ -26,7 +26,7 @@ export const PersonalCard: React.FC<PersonalCardProps> = React.memo(
           className="object-cover w-full h-full"
           alt={`Foto de ${user.full_name}`}
           src={
-            user.image ||
+            user.profile_image ||
             "https://images.unsplash.com/photo-1578390432942-d323db577792"
           }
           loading="lazy"
