@@ -78,7 +78,7 @@ function PersonalListing() {
     hasPreviousPage,
   } = usePagination(filteredUsers, viewMode === "grid" ? 12 : 10);
 
-  const handleSave = async (userData: Omit<User, 'id' | 'formacionAcademica' | 'experienciaLaboral'>) => {
+  const handleSave = async () => {
     setIsLoading(true);
     try {
       await loadUsers();
@@ -152,7 +152,7 @@ function PersonalListing() {
       <PersonalSingle
         persona={currentUser}
         onBack={() => setShowSingle(false)}
-        onEdit={handleEdit}
+        onEdit={handleEdit as any}
         onDelete={handleDelete}
       />
     );
@@ -256,7 +256,6 @@ function PersonalListing() {
           setSelectedUser(null);
         }}
         onSave={handleSave}
-        user={selectedUser}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

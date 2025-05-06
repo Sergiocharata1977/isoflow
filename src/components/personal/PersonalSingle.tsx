@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,39 +7,22 @@ import {
   Trash2,
   Building2,
   GraduationCap,
-  Award,
-  Calendar,
   Mail,
   Phone,
-  MapPin,
   BookOpen,
   Briefcase,
   Star,
   BarChart2,
 } from "lucide-react";
-import { AcademicFormation, PersonalData, WorkExperience } from "@/models/personal-model";
+import { AcademicFormation, WorkExperience } from "@/models/personal-model";
 
-interface Formacion {
-  titulo?: string;
-  institucion?: string;
-  anioFinalizacion?: string;
-  descripcion?: string;
-}
-
-interface Experiencia {
-  puesto?: string;
-  empresa?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
-  descripcion?: string;
-}
-
-interface PersonalSingleProps {
+export interface PersonalSingleProps {
   persona: {
     id: number;
     nombre?: string;
     puesto?: string;
     departamento?: string;
+    full_name: string
     imagen?: string;
     email?: string;
     telefono?: string;
@@ -48,7 +30,7 @@ interface PersonalSingleProps {
     identificacion?: string;
     hire_date?: string;
     fechaIngreso?: string;
-    address: string;
+    address?: string;
     phone?: string;
     direccion?: string;
     formacionAcademica?: AcademicFormation[];
@@ -56,7 +38,6 @@ interface PersonalSingleProps {
     competencias?: string;
     evaluacionDesempeno?: string;
     capacitacionesRecibidas?: string;
-    full_name?: string;
     position?: string;
     department?: string;
   };
