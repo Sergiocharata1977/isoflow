@@ -8,7 +8,7 @@ export interface UserModel {
     department?: string;
     position?: string;
     is_active?: boolean;
-
+    identificacion?: string;
     last_login?: string;
     password_reset_token?: string;
     password_reset_expires?: string;

@@ -13,107 +13,131 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Camera } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import imageCompression from "browser-image-compression";
-
-interface Formacion {
-  titulo: string;
-  institucion: string;
-  anioFinalizacion: string;
-  descripcion?: string;
-}
-
-interface Experiencia {
-  empresa: string;
-  puesto: string;
-  fechaInicio: string;
-  fechaFin?: string;
-  descripcion?: string;
-}
-
-interface Personal {
-  numero: string;
-  nombre: string;
-  puesto: string;
-  departamento: string;
-  email: string;
-  telefono: string;
-  fechaIngreso: string;
-  documentoIdentidad: string;
-  direccion: string;
-  formacionAcademica: Formacion[];
-  experienciaLaboral: Experiencia[];
-  competencias?: string;
-  evaluacionDesempeno?: string;
-  capacitacionesRecibidas?: string;
-  observaciones?: string;
-  imagen: string | null;
-  imagenPreview: string | null;
-}
+import { PersonalService } from "@/services/personal-service";
+import { AcademicFormation, PersonalData, WorkExperience } from "@/models/personal-model";
 
 interface PersonalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Personal) => void;
-  person?: Personal;
+  onSave: () => void;
+  userId?: number;
 }
 
-function PersonalModal({ isOpen, onClose, onSave, person }: PersonalModalProps) {
-  const [formData, setFormData] = useState<Personal>({
-    numero: "",
-    nombre: "",
-    puesto: "",
-    departamento: "",
+function PersonalModal({ isOpen, onClose, onSave, userId }: PersonalModalProps) {
+  const [formData, setFormData] = useState<PersonalData>({
     email: "",
-    telefono: "",
-    fechaIngreso: "",
-    documentoIdentidad: "",
-    direccion: "",
+    full_name: "",
+    role: "employee",
+    position: "",
+    department: "",
+    phone: "",
+    hire_date: "",
+    identificacion: "",
+    address: "",
     formacionAcademica: [],
     experienciaLaboral: [],
-    competencias: "",
-    evaluacionDesempeno: "",
-    capacitacionesRecibidas: "",
-    observaciones: "",
-    imagen: null,
-    imagenPreview: null,
+    skills: "",
+    performance_evaluation: "",
+    training_received: "",
+    notes: "",
+    profile_image: "",
+    password: ""
   });
 
-  const [puestos, setPuestos] = useState<string[]>(() => {
-    const saved = localStorage.getItem("puestos");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [departments, setDepartments] = useState<{id: number, name: string}[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [departamentos, setDepartamentos] = useState<string[]>(() => {
-    const saved = localStorage.getItem("departamentos");
-    return saved ? JSON.parse(saved) : [];
-  });
+useEffect(() => {
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const depts = [
+        { id: 1, name: "Dirección General" },
+        { id: 2, name: "Gestión de Calidad" },
+        { id: 3, name: "Gestión Ambiental" },
+        { id: 4, name: "Seguridad y Salud en el Trabajo" },
+        { id: 5, name: "Auditoría Interna" },
+        { id: 6, name: "Documentación y Control de Registros" },
+        { id: 7, name: "Mejora Continua" },
+        { id: 8, name: "Procesos Operativos" },
+        { id: 9, name: "Recursos Humanos" },
+        { id: 10, name: "Infraestructura y Mantenimiento" }
+      ];
+      
+      const pos = [
+        "Representante de la Dirección",
+        "Responsable del SGC",
+        "Auditor Interno ISO",
+        "Coordinador de Calidad",
+        "Especialista en Gestión Ambiental",
+        "Responsable de SST",
+        "Documentador de Procesos",
+        "Analista de Mejora Continua",
+        "Responsable de Indicadores",
+        "Coordinador de No Conformidades",
+        "Responsable de Acciones Correctivas",
+        "Gestor de Riesgos",
+        "Especialista en Normalización",
+        "Coordinador de Capacitaciones",
+        "Responsable de Proveedores"
+      ];
+      
+      setDepartments(depts);
+      setPositions(pos);
 
-  useEffect(() => {
-    if (person) {
-      setFormData({
-        ...person,
-        imagenPreview: person.imagen,
-      });
-    } else {
-      // Generar número automático
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const random = Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, "0");
-      setFormData({
-        ...formData,
-        numero: `P${year}<span class="math-inline">\{month\}\-</span>{random}`,
-        formacionAcademica: [],
-        experienciaLaboral: [],
-      });
+      if (userId) {
+        const userData = await PersonalService.getPersonalById(userId);
+        if (userData) {
+          setFormData({
+            ...userData,
+            formacionAcademica: userData.formacionAcademica?.map((row) => ({
+              user_id: Number(row.user_id) || 0,
+              titulo: String(row.titulo) || "",
+              institucion: String(row.institucion) || "",
+              anio_finalizacion: String(row.anio_finalizacion) || "",
+              descripcion: String(row.descripcion) || "",
+            })) || [],
+            experienciaLaboral: userData.experienciaLaboral || []
+          });
+        }
+      } else {
+        setFormData({
+          email: "",
+          full_name: "",
+          role: "employee",
+          position: "",
+          department: "",
+          phone: "",
+          hire_date: "",
+          identificacion: "",
+          address: "",
+          formacionAcademica: [],
+          experienciaLaboral: [],
+          skills: "",
+          performance_evaluation: "",
+          training_received: "",
+          notes: "",
+          profile_image: "",
+          password: ""
+
+        });
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [person]);
+  };
+
+  if (isOpen) {
+    loadData();
+  }
+}, [isOpen, userId]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     try {
       const file = acceptedFiles[0];
-
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
@@ -121,13 +145,11 @@ function PersonalModal({ isOpen, onClose, onSave, person }: PersonalModalProps) 
       };
 
       const compressedFile = await imageCompression(file, options);
-
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData((prev) => ({
+        setFormData(prev => ({
           ...prev,
-          imagen: reader.result as string,
-          imagenPreview: reader.result as string,
+          profile_image: reader.result as string
         }));
       };
       reader.readAsDataURL(compressedFile);
@@ -141,84 +163,78 @@ function PersonalModal({ isOpen, onClose, onSave, person }: PersonalModalProps) 
     accept: {
       "image/*": [".png", ".jpg", ".jpeg"],
     },
-    maxSize: 5242880, // 5MB
+    maxSize: 5242880,
     multiple: false,
   });
 
   const addFormacionAcademica = () => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       formacionAcademica: [
-        ...prev.formacionAcademica,
-        {
-          titulo: "",
-          institucion: "",
-          anioFinalizacion: "",
-          descripcion: "",
-        },
-      ],
+        ...(prev.formacionAcademica || []),
+        { user_id: userId || 0, titulo: "", institucion: "", anio_finalizacion: "", descripcion: "" }
+      ]
     }));
   };
 
   const removeFormacionAcademica = (index: number) => {
-    setFormData((prev) => ({
+    setFormData((prev: PersonalData) => ({
       ...prev,
-      formacionAcademica: prev.formacionAcademica.filter((_, i) => i !== index),
+      formacionAcademica: (prev.formacionAcademica || []).filter((_, i: number) => i !== index)
     }));
   };
 
-  const updateFormacionAcademica = (
-    index: number,
-    field: keyof Formacion,
-    value: string
-  ) => {
-    setFormData((prev) => ({
+  const updateFormacionAcademica = (index: number, field: keyof AcademicFormation, value: string) => {
+    setFormData(prev => ({
       ...prev,
-      formacionAcademica: prev.formacionAcademica.map((formacion, i) =>
+      formacionAcademica: (prev.formacionAcademica || []).map((formacion, i) =>
         i === index ? { ...formacion, [field]: value } : formacion
-      ),
+      )
     }));
   };
 
   const addExperienciaLaboral = () => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       experienciaLaboral: [
-        ...prev.experienciaLaboral,
-        {
-          empresa: "",
-          puesto: "",
-          fechaInicio: "",
-          fechaFin: "",
-          descripcion: "",
-        },
-      ],
+        ...(prev.experienciaLaboral || []),
+        { user_id: userId || 0, empresa: "", puesto: "", fecha_inicio: "", fecha_fin: "", descripcion: "" }
+      ]
     }));
   };
 
   const removeExperienciaLaboral = (index: number) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      experienciaLaboral: prev.experienciaLaboral.filter((_, i) => i !== index),
+      experienciaLaboral: (prev.experienciaLaboral || []).filter((_, i) => i !== index)
     }));
   };
 
-  const updateExperienciaLaboral = (
-    index: number,
-    field: keyof Experiencia,
-    value: string
-  ) => {
-    setFormData((prev) => ({
+  const updateExperienciaLaboral = (index: number, field: keyof WorkExperience, value: string) => {
+    setFormData(prev => ({
       ...prev,
-      experienciaLaboral: prev.experienciaLaboral.map((experiencia, i) =>
-        i === index ? { ...experiencia, [field]: value } : experiencia
-      ),
+      experienciaLaboral: (prev.experienciaLaboral || []).map((exp, i) =>
+        i === index ? { ...exp, [field]: value } : exp
+      ) as WorkExperience[]
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    setIsLoading(true);
+    try {
+      if (userId) {
+        await PersonalService.updatePersonal(userId, formData);
+      } else {
+        await PersonalService.createPersonal(formData);
+      }
+      onSave();
+      onClose();
+    } catch (error) {
+      console.error("Error saving personal data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -228,325 +244,342 @@ function PersonalModal({ isOpen, onClose, onSave, person }: PersonalModalProps) 
         onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
-            {person ? "Editar Personal" : "Nuevo Personal"}
+            {userId ? "Editar Personal" : "Nuevo Personal"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="informacion" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="informacion">Información General</TabsTrigger>
-              <TabsTrigger value="formacion">Formación Académica</TabsTrigger>
-              <TabsTrigger value="experiencia">Experiencia Laboral</TabsTrigger>
-            </TabsList>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <p>Cargando...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <Tabs defaultValue="informacion" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="informacion">Información General</TabsTrigger>
+                <TabsTrigger value="formacion">Formación Académica</TabsTrigger>
+                <TabsTrigger value="experiencia">Experiencia Laboral</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="informacion" className="space-y-4 mt-4">
-              {/* Foto de perfil */}
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <div
-                    {...getRootProps()}
-                    className="w-32 h-32 rounded-full overflow-hidden border-2 border-dashed border-primary/50 hover:border-primary transition-colors cursor-pointer flex items-center justify-center bg-muted"
-                  >
-                    <input {...getInputProps()} />
-                    {formData.imagenPreview ? (
-                      <img
-                        src={formData.imagenPreview}
-                        alt="Foto de perfil"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center">
-                        <Camera className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">
-                          Haz clic para subir foto
-                        </p>
-                      </div>
+              <TabsContent value="informacion" className="mt-4 space-y-4">
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <div {...getRootProps()} className="flex items-center justify-center w-32 h-32 overflow-hidden transition-colors border-2 border-dashed rounded-full cursor-pointer border-primary/50 hover:border-primary bg-muted">
+                      <input {...getInputProps()} />
+                      {formData.profile_image ? (
+                        <img src={formData.profile_image} alt="Foto de perfil" className="object-cover w-full h-full" />
+                      ) : (
+                        <div className="text-center">
+                          <Camera className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Haz clic para subir foto</p>
+                        </div>
+                      )}
+                    </div>
+                    {formData.profile_image && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute w-8 h-8 rounded-full -bottom-2 -right-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                            setFormData((prev: PersonalData) => ({ ...prev, profile_image: "" }));
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     )}
                   </div>
-                  {formData.imagenPreview && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setFormData(prev => ({
-                          ...prev,
-                          imagen: null,
-                          imagenPreview: null
-                        }));
-                      }}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Nombre Completo</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="identificacion">Documento de Identidad</Label>
+                    <Input
+                      id="identificacion"
+                      value={formData.identificacion || ""}
+                      onChange={(e) => setFormData({ ...formData, identificacion: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Puesto</Label>
+                    <select
+                      id="position"
+                      className="flex w-full h-10 px-3 py-2 text-sm border rounded-md border-input bg-background ring-offset-background"
+                      value={formData.position || ""}
+                      onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                      required
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                      <option value="">Seleccione un puesto</option>
+                      {positions.map((position) => (
+                        <option key={position} value={position}>
+                          {position}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Departamento</Label>
+                    <select
+                      id="department"
+                      className="flex w-full h-10 px-3 py-2 text-sm border rounded-md border-input bg-background ring-offset-background"
+                      value={formData.department || ""}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      required
+                    >
+                      <option value="">Seleccione un departamento</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Teléfono</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone || ""}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hire_date">Fecha de Ingreso</Label>
+                    <Input
+                      id="hire_date"
+                      type="date"
+                      value={formData.hire_date || ""}
+                      onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="numero">Número de Personal</Label>
+                  <Label htmlFor="address">Dirección</Label>
                   <Input
-                    id="numero"
-                    value={formData.numero}
-                    disabled
+                    id="address"
+                    value={formData.address || ""}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="documentoIdentidad">Documento de Identidad</Label>
+                  <Label htmlFor="skills">Competencias/Habilidades</Label>
                   <Input
-                    id="documentoIdentidad"
-                    value={formData.documentoIdentidad}
-                    onChange={(e) => setFormData({ ...formData, documentoIdentidad: e.target.value })}
-                    required
+                    id="skills"
+                    value={formData.skills || ""}
+                    onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre Completo</Label>
-                <Input
-                  id="nombre"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="puesto">Puesto</Label>
-                  <select
-                    id="puesto"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    value={formData.puesto}
-                    onChange={(e) => setFormData({ ...formData, puesto: e.target.value })}
-                    required
-                  >
-                    <option value="">Seleccione un puesto</option>
-                    {puestos.map((puesto) => (
-                      <option key={puesto.id} value={puesto.nombre}>
-                        {puesto.nombre}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="performance_evaluation">Evaluación de Desempeño</Label>
+                    <Input
+                      id="performance_evaluation"
+                      value={formData.performance_evaluation || ""}
+                      onChange={(e) => setFormData({ ...formData, performance_evaluation: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="training_received">Capacitaciones Recibidas</Label>
+                    <Input
+                      id="training_received"
+                      value={formData.training_received || ""}
+                      onChange={(e) => setFormData({ ...formData, training_received: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="departamento">Departamento</Label>
-                  <select
-                    id="departamento"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    value={formData.departamento}
-                    onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
-                    required
-                  >
-                    <option value="">Seleccione un departamento</option>
-                    {departamentos.map((departamento) => (
-                      <option key={departamento.id} value={departamento.nombre}>
-                        {departamento.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="notes">Observaciones</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    id="notes"
+                    value={formData.notes || ""}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telefono">Teléfono</Label>
-                  <Input
-                    id="telefono"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
+              </TabsContent>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fechaIngreso">Fecha de Ingreso</Label>
-                  <Input
-                    id="fechaIngreso"
-                    type="date"
-                    value={formData.fechaIngreso}
-                    onChange={(e) => setFormData({ ...formData, fechaIngreso: e.target.value })}
-                    required
-                  />
+              <TabsContent value="formacion" className="mt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Formación Académica</h3>
+                  <Button type="button" onClick={addFormacionAcademica} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Formación
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="direccion">Dirección</Label>
-                  <Input
-                    id="direccion"
-                    value={formData.direccion}
-                    onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-            </TabsContent>
 
-            <TabsContent value="formacion" className="space-y-4 mt-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Formación Académica</h3>
-                <Button type="button" onClick={addFormacionAcademica} variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Formación
-                </Button>
-              </div>
-
-              {formData.formacionAcademica.map((formacion, index) => (
-                <div key={index} className="border border-border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-start">
+                {(formData.formacionAcademica || []).map((formacion: AcademicFormation, index: number) => (
+                  <div key={index} className="p-4 space-y-4 border rounded-lg border-border">
+                  <div className="flex items-start justify-between">
                     <h4 className="text-sm font-medium">Formación #{index + 1}</h4>
                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFormacionAcademica(index)}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFormacionAcademica(index)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Título</Label>
-                      <Input
-                        value={formacion.titulo}
-                        onChange={(e) => updateFormacionAcademica(index, 'titulo', e.target.value)}
-                        required
-                      />
+                    <Label>Título</Label>
+                    <Input
+                      value={formacion.titulo}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormacionAcademica(index, 'titulo', e.target.value)}
+                      required
+                    />
                     </div>
                     <div className="space-y-2">
-                      <Label>Institución</Label>
-                      <Input
-                        value={formacion.institucion}
-                        onChange={(e) => updateFormacionAcademica(index, 'institucion', e.target.value)}
-                        required
-                      />
+                    <Label>Institución</Label>
+                    <Input
+                      value={formacion.institucion}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormacionAcademica(index, 'institucion', e.target.value)}
+                      required
+                    />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Año de Finalización</Label>
-                      <Input
-                        type="number"
-                        min="1900"
-                        max="2100"
-                        value={formacion.anioFinalizacion}
-                        onChange={(e) => updateFormacionAcademica(index, 'anioFinalizacion', e.target.value)}
-                        required
-                      />
+                    <Label>Año de Finalización</Label>
+                    <Input
+                      type="number"
+                      min="1900"
+                      max="2100"
+                      value={formacion.anio_finalizacion}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormacionAcademica(index, 'anio_finalizacion', e.target.value)}
+                      required
+                    />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Descripción</Label>
                     <Input
-                      value={formacion.descripcion}
-                      onChange={(e) => updateFormacionAcademica(index, 'descripcion', e.target.value)}
-                      placeholder="Descripción adicional..."
+                    value={formacion.descripcion || ""}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormacionAcademica(index, 'descripcion', e.target.value)}
+                    placeholder="Descripción adicional..."
                     />
                   </div>
+                  </div>
+                ))}
+              </TabsContent>
+
+              <TabsContent value="experiencia" className="mt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Experiencia Laboral</h3>
+                  <Button type="button" onClick={addExperienciaLaboral} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Experiencia
+                  </Button>
                 </div>
-              ))}
-            </TabsContent>
 
-            <TabsContent value="experiencia" className="space-y-4 mt-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Experiencia Laboral</h3>
-                <Button type="button" onClick={addExperienciaLaboral} variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Experiencia
-                </Button>
-              </div>
-
-              {formData.experienciaLaboral.map((experiencia, index) => (
-                <div key={index} className="border border-border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-start">
+                {(formData.experienciaLaboral || []).map((experiencia: WorkExperience, index: number) => (
+                  <div key={index} className="p-4 space-y-4 border rounded-lg border-border">
+                  <div className="flex items-start justify-between">
                     <h4 className="text-sm font-medium">Experiencia #{index + 1}</h4>
                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeExperienciaLaboral(index)}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeExperienciaLaboral(index)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Empresa</Label>
-                      <Input
-                        value={experiencia.empresa}
-                        onChange={(e) => updateExperienciaLaboral(index, 'empresa', e.target.value)}
-                        required
-                      />
+                    <Label>Empresa</Label>
+                    <Input
+                      value={experiencia.empresa}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExperienciaLaboral(index, 'empresa', e.target.value)}
+                      required
+                    />
                     </div>
                     <div className="space-y-2">
-                      <Label>Puesto</Label>
-                      <Input
-                        value={experiencia.puesto}
-                        onChange={(e) => updateExperienciaLaboral(index, 'puesto', e.target.value)}
-                        required
-                      />
+                    <Label>Puesto</Label>
+                    <Input
+                      value={experiencia.puesto}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExperienciaLaboral(index, 'puesto', e.target.value)}
+                      required
+                    />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Fecha de Inicio</Label>
-                      <Input
-                        type="date"
-                        value={experiencia.fechaInicio}
-                        onChange={(e) => updateExperienciaLaboral(index, 'fechaInicio', e.target.value)}
-                        required
-                      />
+                    <Label>Fecha de Inicio</Label>
+                    <Input
+                      type="date"
+                      value={experiencia.fecha_inicio}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExperienciaLaboral(index, 'fecha_inicio', e.target.value)}
+                      required
+                    />
                     </div>
                     <div className="space-y-2">
-                      <Label>Fecha de Fin</Label>
-                      <Input
-                        type="date"
-                        value={experiencia.fechaFin}
-                        onChange={(e) => updateExperienciaLaboral(index, 'fechaFin', e.target.value)}
-                      />
+                    <Label>Fecha de Fin</Label>
+                    <Input
+                      type="date"
+                      value={experiencia.fecha_fin || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExperienciaLaboral(index, 'fecha_fin', e.target.value)}
+                    />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Descripción</Label>
                     <Input
-                      value={experiencia.descripcion}
-                      onChange={(e) => updateExperienciaLaboral(index, 'descripcion', e.target.value)}
-                      placeholder="Descripción de responsabilidades..."
+                    value={experiencia.descripcion || ""}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExperienciaLaboral(index, 'descripcion', e.target.value)}
+                    placeholder="Descripción de responsabilidades..."
                     />
                   </div>
-                </div>
-              ))}
-            </TabsContent>
-          </Tabs>
+                  </div>
+                ))}
+              </TabsContent>
+            </Tabs>
 
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {person ? "Guardar Cambios" : "Crear Personal"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {userId ? "Guardar Cambios" : "Crear Personal"}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

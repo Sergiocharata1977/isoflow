@@ -1,22 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Plus,
-  Search,
-  Download,
-  Pencil,
-  Trash2,
-  Users,
-  LayoutGrid,
-  List,
-  ChevronRight,
-  ChevronLeft,
-} from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { usePagination } from "@/hooks/use-pagination";
+import { PersonalService } from "@/services/personal-service";
+import { PersonalToolbar } from "./PersonalToolbar";
+import { PersonalGridView } from "./PersonalGridView";
+import { PersonalListView } from "./PersonalListView";
+import { PaginationControls } from "./PaginationControls";
 import PersonalModal from "./PersonalModal";
 import PersonalSingle from "./PersonalSingle";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -27,118 +20,36 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useDebounce } from "@/hooks/use-debounce";
-import { usePagination } from "@/hooks/use-pagination";
-
-interface Person {
-  id: number;
-  numero?: string;
-  nombre?: string;
-  puesto?: string;
-  departamento?: string;
-  imagen?: string;
-  email?: string;
-  telefono?: string;
-}
-
-interface PersonalCardProps {
-  person: Person;
-  onView: (person: Person) => void;
-  onEdit: (person: Person) => void;
-  onDelete: (id: number) => void;
-}
-
-const PersonalCard: React.FC<PersonalCardProps> = React.memo(
-  ({ person, onView, onEdit, onDelete }) => (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
-      onClick={() => onView(person)}
-    >
-      <div className="aspect-square relative">
-        <img
-          className="w-full h-full object-cover"
-          alt={`Foto de ${person.nombre}`}
-          src={
-            person.imagen ||
-            "https://images.unsplash.com/photo-1578390432942-d323db577792"
-          }
-          loading="lazy"
-        />
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold">{person.nombre}</h3>
-        <p className="text-sm text-muted-foreground">{person.puesto}</p>
-        <p className="text-sm text-muted-foreground">{person.departamento}</p>
-        <div className="mt-4 flex justify-end space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(person);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(person.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </motion.div>
-  )
-);
-
-const PersonalSkeletonCard: React.FC = () => (
-  <div className="bg-card border border-border rounded-lg overflow-hidden">
-    <Skeleton className="aspect-square" />
-    <div className="p-4 space-y-2">
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-3 w-1/2" />
-      <Skeleton className="h-3 w-1/2" />
-    </div>
-  </div>
-);
+import { Skeleton } from "../ui/skeleton";
+import { User } from "@/types/user";
 
 function PersonalListing() {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSingle, setShowSingle] = useState(false);
-  const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
-  const [personal, setPersonal] = useState<Person[]>([]);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    loadPersonal();
+    loadUsers();
   }, []);
 
-  const loadPersonal = useCallback(() => {
+  const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const saved = localStorage.getItem("personal");
-      const data = saved ? (JSON.parse(saved) as Person[]) : [];
-      setPersonal(data);
+      const usersData = await PersonalService.getAllUsers();
+      setUsers(usersData);
     } catch (error) {
-      console.error("Error loading personal:", error);
+      console.error("Error loading users:", error);
       toast({
         title: "Error",
-        description: "No se pudo cargar la lista de personal",
+        description: "No se pudo cargar la lista de usuarios",
         variant: "destructive",
       });
     } finally {
@@ -148,59 +59,37 @@ function PersonalListing() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const filteredPersonal = useMemo(() => {
-    return personal.filter((person) =>
-      person.nombre?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      person.puesto?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      person.departamento?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+  const filteredUsers = useMemo(() => {
+    return users.filter(
+      (user) =>
+        user.full_name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        user.position?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        user.department?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
-  }, [personal, debouncedSearchTerm]);
+  }, [users, debouncedSearchTerm]);
 
   const {
-    paginatedData: paginatedPersonal,
+    paginatedData: paginatedUsers,
     currentPage,
     totalPages,
     nextPage,
     previousPage,
     hasNextPage,
     hasPreviousPage,
-  } = usePagination(filteredPersonal, viewMode === "grid" ? 12 : 10);
+  } = usePagination(filteredUsers, viewMode === "grid" ? 12 : 10);
 
-  const handleSave = async (personData: Omit<Person, 'id' | 'numero'>) => {
+  const handleSave = async (userData: Omit<User, 'id' | 'formacionAcademica' | 'experienciaLaboral'>) => {
     setIsLoading(true);
     try {
-      let updatedPersonal: Person[];
-      if (selectedPerson) {
-        updatedPersonal = personal.map((p) =>
-          p.id === selectedPerson.id
-            ? { ...personData, id: selectedPerson.id, numero: selectedPerson.numero }
-            : p
-        );
-        toast({
-          title: "Registro actualizado",
-          description: "Los datos del personal han sido actualizados exitosamente",
-        });
-      } else {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const random = Math.floor(Math.random() * 1000)
-          .toString()
-          .padStart(3, "0");
-        const numero = `P${year}<span class="math-inline">\{month\}\-</span>{random}`;
-
-        updatedPersonal = [...personal, { ...personData, id: Date.now(), numero }];
-        toast({
-          title: "Registro creado",
-          description: "Se ha agregado un nuevo registro de personal",
-        });
-      }
-      setPersonal(updatedPersonal);
-      localStorage.setItem("personal", JSON.stringify(updatedPersonal));
+      await loadUsers();
+      toast({
+        title: "Operación exitosa",
+        description: selectedUser ? "Usuario actualizado" : "Usuario creado",
+      });
       setIsModalOpen(false);
-      setSelectedPerson(null);
+      setSelectedUser(null);
     } catch (error) {
-      console.error("Error saving personal:", error);
+      console.error("Error saving user:", error);
       toast({
         title: "Error",
         description: "Ocurrió un error al guardar los datos",
@@ -211,54 +100,57 @@ function PersonalListing() {
     }
   };
 
-  const handleEdit = (person: Person) => {
-    setSelectedPerson(person);
+  const handleEdit = (user: User) => {
+    setSelectedUser(user);
     setIsModalOpen(true);
   };
 
   const handleDelete = (id: number) => {
-    const personToDelete = personal.find((p) => p.id === id);
-    setPersonToDelete(personToDelete ?? null);
+    const userToDelete = users.find((u) => u.id === id);
+    setUserToDelete(userToDelete ?? null);
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (!personToDelete) return;
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
 
     try {
-      const updatedPersonal = personal.filter((p) => p.id !== personToDelete.id);
-      setPersonal(updatedPersonal);
-      localStorage.setItem("personal", JSON.stringify(updatedPersonal));
+      await PersonalService.deletePersonal(userToDelete.id);
+      await loadUsers();
       toast({
-        title: "Registro eliminado",
-        description: "El registro ha sido eliminado exitosamente",
+        title: "Usuario eliminado",
+        description: "El usuario ha sido eliminado exitosamente",
       });
 
       if (showSingle) {
         setShowSingle(false);
       }
     } catch (error) {
-      console.error("Error deleting personal:", error);
+      console.error("Error deleting user:", error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el registro",
+        description: "No se pudo eliminar el usuario",
         variant: "destructive",
       });
     } finally {
       setDeleteDialogOpen(false);
-      setPersonToDelete(null);
+      setUserToDelete(null);
     }
   };
 
-  const handleViewPerson = (person: Person) => {
-    setCurrentPerson(person);
+  const handleViewUser = (user: User) => {
+    setCurrentUser(user);
     setShowSingle(true);
   };
 
-  if (showSingle && currentPerson) {
+  const handleExport = () => {
+    // Implementar lógica de exportación
+  };
+
+  if (showSingle && currentUser) {
     return (
       <PersonalSingle
-        persona={currentPerson}
+        persona={currentUser}
         onBack={() => setShowSingle(false)}
         onEdit={handleEdit}
         onDelete={handleDelete}
@@ -266,238 +158,105 @@ function PersonalListing() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="icon"
-            onClick={() => setViewMode("grid")}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "secondary" : "ghost"}
-            size="icon"
-            onClick={() => setViewMode("list")}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar personal..."
-              className="pl-8 h-10 w-full sm:w-[300px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+  // Componente de carga para la vista de grid
+  const GridLoadingSkeleton = () => (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: 12 }).map((_, index) => (
+        <div key={index} className="flex flex-col space-y-3">
+          <Skeleton className="h-[180px] rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="w-full h-4" />
+            <Skeleton className="w-3/4 h-3" />
           </div>
         </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" onClick={() => { }}>
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Personal
-          </Button>
-        </div>
-      </div>
+      ))}
+    </div>
+  );
 
-      {/* Content */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+  // Componente de carga para la vista de lista
+  const ListLoadingSkeleton = () => (
+    <div className="overflow-hidden border rounded-lg bg-card border-border">
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div key={index} className="p-4 border-b border-border">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-[200px]" />
+              <Skeleton className="h-3 w-[150px]" />
+            </div>
+            <div className="flex space-x-2">
+              <Skeleton className="w-8 h-8 rounded-md" />
+              <Skeleton className="w-8 h-8 rounded-md" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PersonalToolbar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onExport={handleExport}
+        onAddNew={() => setIsModalOpen(true)}
+      />
+
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
       >
         {isLoading ? (
-          // Skeleton Loading
           viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <PersonalSkeletonCard key={i} />
-              ))}
-            </div>
+            <GridLoadingSkeleton />
           ) : (
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="border-b border-border p-4">
-                  <div className="flex items-center space-x-4">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-[200px]" />
-                      <Skeleton className="h-3 w-[150px]" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ListLoadingSkeleton />
           )
         ) : (
           <>
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {paginatedPersonal.map((person: any) => (
-                  <PersonalCard
-                    key={person.id}
-                    person={person}
-                    onView={handleViewPerson}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
+              <PersonalGridView
+                users={paginatedUsers}
+                onView={handleViewUser}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             ) : (
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-4">Foto</th>
-                      <th className="text-left p-4">Nombre</th>
-                      <th className="text-left p-4 hidden md:table-cell">Puesto</th>
-                      <th className="text-left p-4 hidden lg:table-cell">
-                        Departamento
-                      </th>
-                      <th className="text-left p-4 hidden xl:table-cell">Email</th>
-                      <th className="text-left p-4 hidden xl:table-cell">
-                        Teléfono
-                      </th>
-                      <th className="text-right p-4">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedPersonal.map((person: any) => (
-                      <motion.tr
-                        key={person.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="border-b border-border cursor-pointer hover:bg-accent/50"
-                        onClick={() => handleViewPerson(person)}
-                      >
-                        <td className="p-4">
-                          <div className="w-10 h-10 rounded-full overflow-hidden">
-                            <img
-                              className="w-full h-full object-cover"
-                              alt={`Foto de ${person.nombre}`}
-                              src={
-                                person.imagen ||
-                                "https://images.unsplash.com/photo-1578390432942-d323db577792"
-                              }
-                              loading="lazy"
-                            />
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-2">
-                            <span>{person.nombre}</span>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </td>
-                        <td className="p-4 hidden md:table-cell">
-                          {person.puesto}
-                        </td>
-                        <td className="p-4 hidden lg:table-cell">
-                          {person.departamento}
-                        </td>
-                        <td className="p-4 hidden xl:table-cell">{person.email}</td>
-                        <td className="p-4 hidden xl:table-cell">
-                          {person.telefono}
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(person);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(person.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-                {paginatedPersonal.length === 0 && (
-                  <div className="text-center py-12">
-                    <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">
-                      No hay personal registrado. Haz clic en "Nuevo Personal"
-                      para comenzar.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <PersonalListView
+                users={paginatedUsers}
+                onView={handleViewUser}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-4 flex justify-center items-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={previousPage}
-                  disabled={!hasPreviousPage}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={!hasNextPage}
-                >
-                  Siguiente
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={!hasNextPage}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrevious={previousPage}
+                onNext={nextPage}
+                hasPrevious={hasPreviousPage}
+                hasNext={hasNextPage}
+              />
             )}
           </>
         )}
       </motion.div>
 
-      {/* Modals */}
       <PersonalModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setSelectedPerson(null);
+          setSelectedUser(null);
         }}
         onSave={handleSave}
-        person={selectedPerson}
+        user={selectedUser}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -506,7 +265,7 @@ function PersonalListing() {
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminará permanentemente el
-              registro de {personToDelete?.nombre}.
+              usuario {userToDelete?.full_name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
