@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState, useEffect, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,17 +10,45 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { IndicadorModel } from "@/models/indicador-model";
+import { UsersService } from "@/services/UsersService";
+import { UserModel } from "@/models/user-model";
 
-function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
-  const [formData, setFormData] = useState({
+interface IndicadorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: IndicadorModel) => void;
+  indicador?: IndicadorModel | null;
+}
+
+function IndicadorModal({
+  isOpen,
+  onClose,
+  onSave,
+  indicador,
+}: IndicadorModalProps) {
+  const [users, setUsers] = useState<UserModel[]>([]);
+  const [formData, setFormData] = useState<IndicadorModel>({
     titulo: "",
     descripcion: "",
-    responsable: "",
+    responsable_id: 0,
     unidad_medida: "",
     limite_aceptacion: "",
-    objetivo_calidad: ""
+    objetivo_calidad: "",
   });
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await UsersService.getAll();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error al cargar las auditorias:", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (indicador) {
@@ -30,15 +57,15 @@ function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
       setFormData({
         titulo: "",
         descripcion: "",
-        responsable: "",
+        responsable_id: 0,
         unidad_medida: "",
         limite_aceptacion: "",
-        objetivo_calidad: ""
+        objetivo_calidad: "",
       });
     }
   }, [indicador]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
@@ -58,19 +85,31 @@ function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
               <Input
                 id="titulo"
                 value={formData.titulo}
-                onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, titulo: e.target.value })
+                }
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="responsable">Responsable</Label>
-              <Input
+              <select
                 id="responsable"
-                value={formData.responsable}
-                onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                value={formData.responsable_id ?? ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, responsable_id: Number(e.target.value) })
+                }
                 required
-              />
+              >
+                <option value="">Seleccione un responsable</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.full_name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -79,7 +118,9 @@ function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
             <Textarea
               id="descripcion"
               value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, descripcion: e.target.value })
+              }
               required
               className="min-h-[100px]"
             />
@@ -91,7 +132,9 @@ function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
               <Input
                 id="unidad_medida"
                 value={formData.unidad_medida}
-                onChange={(e) => setFormData({ ...formData, unidad_medida: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, unidad_medida: e.target.value })
+                }
                 required
               />
             </div>
@@ -102,7 +145,12 @@ function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
                 id="limite_aceptacion"
                 type="number"
                 value={formData.limite_aceptacion}
-                onChange={(e) => setFormData({ ...formData, limite_aceptacion: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    limite_aceptacion: e.target.value,
+                  })
+                }
                 required
               />
             </div>
@@ -113,7 +161,12 @@ function IndicadorModal({ isOpen, onClose, onSave, indicador }) {
             <Textarea
               id="objetivo_calidad"
               value={formData.objetivo_calidad}
-              onChange={(e) => setFormData({ ...formData, objetivo_calidad: e.target.value })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  objetivo_calidad: e.target.value,
+                })
+              }
               required
               className="min-h-[100px]"
             />

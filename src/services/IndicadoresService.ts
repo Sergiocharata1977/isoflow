@@ -7,7 +7,7 @@ export class IndicadoresService {
             await db.execute(
                 `INSERT INTO indicadores (
                     titulo,
-                    responsable,
+                    responsable_id,
                     descripcion,
                     unidad_medida,
                     limite_aceptacion,
@@ -15,7 +15,7 @@ export class IndicadoresService {
                 ) VALUES (?, ?, ?, ?, ?, ?)`,
                 [
                     data.titulo,
-                    data.responsable,
+                    data.responsable_id,
                     data.descripcion ?? null,
                     data.unidad_medida ?? null,
                     data.limite_aceptacion ?? null,
@@ -23,14 +23,14 @@ export class IndicadoresService {
                 ]
             );
 
-            const created = await db.execute("SELECT * FROM indicadores ORDER BY created_at DESC LIMIT 1");
+            const created = await db.execute("SELECT * FROM indicadores ORDER BY id DESC LIMIT 1");
             const row = created.rows[0];
             if (!row) throw new Error("No se pudo recuperar el indicador recién creado");
 
             return {
                 id: Number(row.id),
                 titulo: row.titulo as string,
-                responsable: row.responsable as string,
+                responsable_id: row.responsable_id as number,
                 descripcion: row.descripcion as string,
                 unidad_medida: row.unidad_medida as string,
                 limite_aceptacion: row.limite_aceptacion as string,
@@ -39,7 +39,6 @@ export class IndicadoresService {
                 updated_at: row.updated_at as string,
             };
         } catch (error) {
-            console.error("Error creando indicador:", error);
             throw error;
         }
     }
@@ -51,7 +50,7 @@ export class IndicadoresService {
             return result.rows.map((row: any) => ({
                 id: row.id ?? null,
                 titulo: row.titulo ?? null,
-                responsable: row.responsable ?? null,
+                responsable_id: row.responsable_id as number,
                 descripcion: row.descripcion ?? null,
                 unidad_medida: row.unidad_medida ?? null,
                 limite_aceptacion: row.limite_aceptacion ?? null,
@@ -74,7 +73,7 @@ export class IndicadoresService {
             return {
                 id: Number(row.id),
                 titulo: row.titulo as string,
-                responsable: row.responsable as string,
+                responsable_id: row.responsable_id as number,
                 descripcion: row.descripcion as string,
                 unidad_medida: row.unidad_medida as string,
                 limite_aceptacion: row.limite_aceptacion as string,
@@ -95,7 +94,7 @@ export class IndicadoresService {
 
             const updateData: Partial<IndicadorModel> = {
                 titulo: data.titulo ?? original.titulo,
-                responsable: data.responsable ?? original.responsable,
+                responsable_id: data.responsable_id ?? original.responsable_id,
                 descripcion: data.descripcion ?? original.descripcion,
                 unidad_medida: data.unidad_medida ?? original.unidad_medida,
                 limite_aceptacion: data.limite_aceptacion ?? original.limite_aceptacion,
@@ -104,12 +103,12 @@ export class IndicadoresService {
 
             await db.execute(
                 `UPDATE indicadores SET
-                    titulo = ?, responsable = ?, descripcion = ?,
+                    titulo = ?, responsable_id = ?, descripcion = ?,
                     unidad_medida = ?, limite_aceptacion = ?, objetivo_calidad = ?
                 WHERE id = ?`,
                 [
                     updateData.titulo,
-                    updateData.responsable,
+                    updateData.responsable_id,
                     updateData.descripcion,
                     updateData.unidad_medida,
                     updateData.limite_aceptacion,

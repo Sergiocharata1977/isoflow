@@ -13,91 +13,19 @@ import {
   List,
 } from "lucide-react";
 import IndicadorModal from "./IndicadorModal";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 import { IndicadorModel } from "@/models/indicador-model";
 import { IndicadoresService } from "@/services/IndicadoresService";
-
-interface IndicadorCardProps {
-  indicador: IndicadorModel;
-  onView: (indicador: IndicadorModel) => void;
-  onEdit: (indicador: IndicadorModel) => void;
-  onDelete: (id: number) => void;
-}
-
-const IndicadorCard: React.FC<IndicadorCardProps> = React.memo(
-  ({ indicador, onView, onEdit, onDelete }) => (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
-      onClick={() => onView(indicador)}
-    >
-      <div className="p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="bg-primary/10 p-2 rounded-lg">
-            <BarChart2 className="h-5 w-5 text-primary" />
-          </div>
-          <h3 className="font-semibold truncate">{indicador.titulo}</h3>
-        </div>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-          {indicador.descripcion}
-        </p>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">
-            {indicador.unidad_medida}
-          </span>
-          <div className="flex space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(indicador);
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(indicador.id!);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  )
-);
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import IndicadorCard from "./IndicadorCard";
 
 function IndicadoresListing() {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedIndicador, setSelectedIndicador] = useState<IndicadorModel | null>(
-    null
-  );
+  const [selectedIndicador, setSelectedIndicador] = useState<IndicadorModel | null>(null);
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [indicadorToDelete, setIndicadorToDelete] = useState<IndicadorModel | null>(
-    null
-  );
   const [indicadores, setIndicadores] = useState<IndicadorModel[]>([]);
 
   useEffect(() => {
@@ -121,33 +49,30 @@ function IndicadoresListing() {
     fetchIndicadores();
   };
 
-  const handleSave = async (indicadorData: Omit<IndicadorModel, 'id'>) => {
+  const handleSave = async (indicadorData: IndicadorModel) => {
     try {
-      let updatedIndicadores: IndicadorModel[];
       if (selectedIndicador) {
-        updatedIndicadores = indicadores.map((i) =>
-          i.id === selectedIndicador.id
-            ? { ...indicadorData, id: selectedIndicador.id }
-            : i
+        const updatedIndicador = await IndicadoresService.update(indicadorData.id!, indicadorData);
+        const updatedIndicadors = indicadores.map(a =>
+          a.id === selectedIndicador.id ? updatedIndicador : a
         );
+        setIndicadores(updatedIndicadors);
         toast({
           title: "Indicador actualizado",
           description: "Los datos del indicador han sido actualizados exitosamente",
         });
       } else {
-        const newId = Date.now();
-        updatedIndicadores = [...indicadores, { ...indicadorData, id: newId }];
+        const createdIndicadores = await IndicadoresService.create(indicadorData);
+        console.log(createdIndicadores);
+        setIndicadores([createdIndicadores, ...indicadores]);
         toast({
           title: "Indicador creado",
           description: "Se ha agregado un nuevo indicador exitosamente",
         });
       }
-      setIndicadores(updatedIndicadores);
-      localStorage.setItem("indicadores", JSON.stringify(updatedIndicadores));
       setIsModalOpen(false);
       setSelectedIndicador(null);
     } catch (error) {
-      console.error("Error saving indicador:", error);
       toast({
         title: "Error",
         description: "No se pudo guardar el indicador",
@@ -161,35 +86,36 @@ function IndicadoresListing() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    const indicadorToDelete = indicadores.find((i) => i.id === id);
-    setIndicadorToDelete(indicadorToDelete ?? null);
-    setDeleteDialogOpen(true);
-  };
+  const handleDelete = async (indicador: IndicadorModel) => {
+    const accepted = await confirm({
+      title: 'Eliminar indicador',
+      message: '¿Seguro que deseas eliminar esta indicador?',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+    });
 
-  const confirmDelete = () => {
-    if (!indicadorToDelete) return;
+    if (accepted) {
+      try {
+        await IndicadoresService.delete(indicador.id!);
 
-    try {
-      const updatedIndicadores = indicadores.filter(
-        (i) => i.id !== indicadorToDelete.id
-      );
-      setIndicadores(updatedIndicadores);
-      localStorage.setItem("indicadores", JSON.stringify(updatedIndicadores));
-      toast({
-        title: "Indicador eliminado",
-        description: "El indicador ha sido eliminado exitosamente",
-      });
-    } catch (error) {
-      console.error("Error deleting indicador:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el indicador",
-        variant: "destructive",
-      });
-    } finally {
-      setDeleteDialogOpen(false);
-      setIndicadorToDelete(null);
+        setIndicadores(prev =>
+          prev.filter(a => a.id !== indicador.id)
+        );
+
+        toast({
+          title: "Indicador eliminado",
+          description: "El indicador se ha sido eliminado exitosamente"
+        });
+
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el indicador",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -237,11 +163,11 @@ function IndicadoresListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" onClick={() => { }}>
+          {/* <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
-          </Button>
-          <Button onClick={() => setIsModalOpen(true)}>
+          </Button> */}
+          <Button onClick={() => { setIsModalOpen(true), setSelectedIndicador(null) }}>
             <Plus className="mr-2 h-4 w-4" />
             Nuevo Indicador
           </Button>
@@ -252,13 +178,13 @@ function IndicadoresListing() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIndicadores.map((indicador) => (
+            {filteredIndicadores.map((indicador: IndicadorModel) => (
               <IndicadorCard
                 key={indicador.id}
                 indicador={indicador}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={() => { }} // Add a dummy onView function if it's required by IndicadorCardProps
+                onDelete={() => handleDelete(indicador)}
+                onView={() => { }}
               />
             ))}
           </div>
@@ -307,7 +233,7 @@ function IndicadoresListing() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(indicador.id!)}
+                        onClick={() => handleDelete(indicador)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -340,26 +266,8 @@ function IndicadoresListing() {
         indicador={selectedIndicador}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el
-              indicador {indicadorToDelete?.titulo}.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {ConfirmDialog}
+
     </div>
   );
 }
