@@ -270,23 +270,54 @@ export class PersonalService {
     }
   }
 
+  // static async deletePersonal(id: number) {
+  //   try {
+  //     await db.execute('DELETE FROM formacion_academica WHERE user_id = ?', [id]);
+  //     await db.execute('DELETE FROM experiencia_laboral WHERE user_id = ?', [id]);
+  
+  //     const result = await db.execute('DELETE FROM users WHERE id = ?', [id]);
+  
+  //     if (result.rowsAffected === 0) {
+  //       throw new Error(`User with id ${id} not found or already deleted.`);
+  //     }
+  
+  //     return { success: true, message: 'Usuario eliminado correctamente' };
+  //   } catch (error) {
+  //     console.error("Error in deletePersonal:", error);
+  //     throw error;
+  //   }
+  // }
+
   static async deletePersonal(id: number) {
     try {
+      const userResult = await db.execute('SELECT email FROM users WHERE id = ?', [id]);
+  
+      if (userResult.rows.length === 0) {
+        throw new Error(`Usuario con id ${id} no encontrado.`);
+      }
+  
+      const email = userResult.rows[0].email;
+  
+      if (email === 'admin@isoflow.com') {
+        throw new Error('No se puede eliminar el usuario administrador.');
+      }
+  
       await db.execute('DELETE FROM formacion_academica WHERE user_id = ?', [id]);
       await db.execute('DELETE FROM experiencia_laboral WHERE user_id = ?', [id]);
   
       const result = await db.execute('DELETE FROM users WHERE id = ?', [id]);
   
       if (result.rowsAffected === 0) {
-        throw new Error(`User with id ${id} not found or already deleted.`);
+        throw new Error(`Usuario con id ${id} no encontrado o ya fue eliminado.`);
       }
   
       return { success: true, message: 'Usuario eliminado correctamente' };
     } catch (error) {
-      console.error("Error in deletePersonal:", error);
+      console.error("Error en deletePersonal:", error);
       throw error;
     }
   }
+  
   
 }
 

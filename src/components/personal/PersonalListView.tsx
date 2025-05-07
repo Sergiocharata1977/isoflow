@@ -69,16 +69,19 @@ export function PersonalListView({ users, onView, onEdit, onDelete }: PersonalLi
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(user.id);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+
+                {user.email !== 'admin@isoflow.com' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(user.id);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </td>
             </motion.tr>
           ))}
