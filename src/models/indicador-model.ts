@@ -1,7 +1,7 @@
 export interface IndicadorModel {
     id?: number,
     titulo: string,
-    responsable: string,
+    responsable_id: number,
     descripcion: string,
     unidad_medida: string,
     limite_aceptacion: string,
