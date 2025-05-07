@@ -7,12 +7,9 @@ import { Textarea } from "../ui/textarea";
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from "../ui/dialog";
 import { AuditoriaModel, PuntoEvaluadoModel } from "@/models/auditoria-model";
 import { ProcesoModel } from "@/models/proceso-model";
-
-
-interface Persona {
-  id: number;
-  nombre: string;
-}
+import { UsersService } from "@/services/UsersService";
+import { UserModel } from "@/models/user-model";
+import { ProcesosService } from "@/services/ProcesosService";
 
 interface AuditoriaModalProps {
   isOpen: boolean;
@@ -22,44 +19,58 @@ interface AuditoriaModalProps {
 }
 
 function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalProps) {
+  const [users, setUsers] = useState<UserModel[]>([]);
+  const [procesos, setProcesos] = useState<ProcesoModel[]>([]);
   const [formData, setFormData] = useState<AuditoriaModel>({
-    numero: "",
+    numero_auditoria: "",
     fecha_programada: "",
-    responsable: "",
+    responsable_id: 0,
     objetivo: "",
-    procesos_evaluar: "",
+    proceso_id: 0,
     estado: "Planificada",
     puntos: [],
-    comentarios_finales: ""
+    comentarios_finales: "",
   });
 
-  const [personal, setPersonal] = useState<Persona[]>(() => {
-    const saved = localStorage.getItem("personal");
-    return saved ? JSON.parse(saved) : [];
-  });
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await UsersService.getAll();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error al cargar las auditorias:", error);
+      }
+    };
 
-  const [procesos, setProcesos] = useState<ProcesoModel[]>(() => {
-    const saved = localStorage.getItem("procesos");
-    return saved ? JSON.parse(saved) : [];
-  });
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const fetchAuditorias = async () => {
+      try {
+        const data = await ProcesosService.getAll();
+        setProcesos(data);
+      } catch (error) {
+        console.error("Error al cargar las auditorias:", error);
+      }
+    };
+
+    fetchAuditorias();
+  }, []);
 
   useEffect(() => {
     if (auditoria) {
       setFormData(auditoria);
     } else {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       setFormData({
-        numero: `A${year}${month}-${random}`,
+        numero_auditoria: "",
         fecha_programada: "",
-        responsable: "",
+        responsable_id: 0,
         objetivo: "",
-        procesos_evaluar: "",
+        proceso_id: 0,
         estado: "Planificada",
         puntos: [],
-        comentarios_finales: ""
+        comentarios_finales: "",
       });
     }
   }, [auditoria]);
@@ -68,7 +79,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
     setFormData(prev => ({
       ...prev,
       puntos: [
-        ...prev.puntos,
+        ...prev.puntos!,
         {
           punto_norma: "",
           calificacion: "Regular",
@@ -81,14 +92,14 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
   const removePuntoEvaluado = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      puntos: prev.puntos.filter((_, i) => i !== index)
+      puntos: prev.puntos?.filter((_, i) => i !== index)
     }));
   };
 
   const updatePuntoEvaluado = (index: number, field: keyof PuntoEvaluadoModel, value: string) => {
     setFormData(prev => ({
       ...prev,
-      puntos: prev.puntos.map((punto, i) =>
+      puntos: prev.puntos?.map((punto, i) =>
         i === index ? { ...punto, [field]: value } : punto
       )
     }));
@@ -101,7 +112,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{auditoria ? "Editar Auditoría" : "Nueva Auditoría"}</DialogTitle>
         </DialogHeader>
@@ -109,7 +122,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="numero">Número de Auditoría</Label>
-              <Input id="numero" value={formData.numero} disabled />
+              <Input id="numero" value={formData.numero_auditoria} onChange={(e) =>
+                setFormData({ ...formData, numero_auditoria: e.target.value })
+              } />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fecha_programada">Fecha Programada</Label>
@@ -130,16 +145,16 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
             <select
               id="responsable"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={formData.responsable}
+              value={formData.responsable_id ?? ''}
               onChange={(e) =>
-                setFormData({ ...formData, responsable: e.target.value })
+                setFormData({ ...formData, responsable_id: Number(e.target.value) })
               }
               required
             >
               <option value="">Seleccione un responsable</option>
-              {personal.map((persona) => (
-                <option key={persona.id} value={persona.nombre}>
-                  {persona.nombre}
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.full_name}
                 </option>
               ))}
             </select>
@@ -163,15 +178,15 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
             <select
               id="procesos_evaluar"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={formData.procesos_evaluar}
+              value={formData.proceso_id}
               onChange={(e) =>
-                setFormData({ ...formData, procesos_evaluar: e.target.value })
+                setFormData({ ...formData, proceso_id: Number(e.target.value) })
               }
               required
             >
               <option value="">Seleccione un proceso</option>
               {procesos.map((proceso) => (
-                <option key={proceso.id} value={proceso.titulo}>
+                <option key={proceso.id} value={proceso.id}>
                   {proceso.titulo}
                 </option>
               ))}
@@ -190,9 +205,9 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
               required
             >
               <option value="Planificada">Planificada</option>
-              <option value="En Ejecución">En Ejecución</option>
-              <option value="Terminada">Terminada</option>
-              <option value="Controlada">Controlada</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Finalizada">Finalizada</option>
+              <option value="Cancelada">Cancelada</option>
             </select>
           </div>
 
@@ -205,7 +220,7 @@ function AuditoriaModal({ isOpen, onClose, onSave, auditoria }: AuditoriaModalPr
               </Button>
             </div>
 
-            {formData.puntos.map((punto, index) => (
+            {formData.puntos?.map((punto, index) => (
               <div key={index} className="border border-border rounded-lg p-4 space-y-4">
                 <div className="flex justify-between items-start">
                   <h4 className="text-sm font-medium">Punto Evaluado #{index + 1}</h4>

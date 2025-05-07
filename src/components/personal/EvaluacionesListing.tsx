@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { 
+import {
   Plus,
   Search,
   Download,
@@ -13,21 +12,31 @@ import {
 } from "lucide-react";
 import EvaluacionModal from "./EvaluacionModal";
 
+// Tipado para una evaluación
+interface Evaluacion {
+  id: number;
+  empleado: string;
+  evaluador: string;
+  fecha: string;
+  periodo: string;
+  resultado: number;
+}
+
 function EvaluacionesListing() {
   const { toast } = useToast();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEvaluacion, setSelectedEvaluacion] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedEvaluacion, setSelectedEvaluacion] = useState<Evaluacion | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [evaluaciones, setEvaluaciones] = useState(() => {
+  const [evaluaciones, setEvaluaciones] = useState<Evaluacion[]>(() => {
     const saved = localStorage.getItem("evaluaciones");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) as Evaluacion[] : [];
   });
 
-  const handleSave = (evaluacionData) => {
-    let updatedEvaluaciones;
+  const handleSave = (evaluacionData: Omit<Evaluacion, "id">) => {
+    let updatedEvaluaciones: Evaluacion[];
     if (selectedEvaluacion) {
-      updatedEvaluaciones = evaluaciones.map(e => 
+      updatedEvaluaciones = evaluaciones.map((e) =>
         e.id === selectedEvaluacion.id ? { ...evaluacionData, id: selectedEvaluacion.id } : e
       );
       toast({
@@ -47,13 +56,13 @@ function EvaluacionesListing() {
     setSelectedEvaluacion(null);
   };
 
-  const handleEdit = (evaluacion) => {
+  const handleEdit = (evaluacion: Evaluacion) => {
     setSelectedEvaluacion(evaluacion);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    const updatedEvaluaciones = evaluaciones.filter(e => e.id !== id);
+  const handleDelete = (id: number) => {
+    const updatedEvaluaciones = evaluaciones.filter((e) => e.id !== id);
     setEvaluaciones(updatedEvaluaciones);
     localStorage.setItem("evaluaciones", JSON.stringify(updatedEvaluaciones));
     toast({
@@ -62,7 +71,7 @@ function EvaluacionesListing() {
     });
   };
 
-  const filteredEvaluaciones = evaluaciones.filter(evaluacion =>
+  const filteredEvaluaciones = evaluaciones.filter((evaluacion) =>
     evaluacion.empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
     evaluacion.evaluador.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -84,7 +93,7 @@ function EvaluacionesListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -115,19 +124,18 @@ function EvaluacionesListing() {
                     Evaluador: {evaluacion.evaluador}
                   </p>
                   <div className="flex items-center space-x-4 mt-2">
-                    <p className="text-sm">
-                      Fecha: {evaluacion.fecha}
-                    </p>
-                    <p className="text-sm">
-                      Periodo: {evaluacion.periodo}
-                    </p>
+                    <p className="text-sm">Fecha: {evaluacion.fecha}</p>
+                    <p className="text-sm">Periodo: {evaluacion.periodo}</p>
                   </div>
                   <div className="mt-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      evaluacion.resultado >= 90 ? "bg-green-100 text-green-800" :
-                      evaluacion.resultado >= 70 ? "bg-yellow-100 text-yellow-800" :
-                      "bg-red-100 text-red-800"
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${evaluacion.resultado >= 90
+                          ? "bg-green-100 text-green-800"
+                          : evaluacion.resultado >= 70
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                    >
                       Resultado: {evaluacion.resultado}%
                     </span>
                   </div>

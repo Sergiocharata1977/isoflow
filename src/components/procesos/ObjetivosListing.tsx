@@ -1,92 +1,107 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Target, Search, Edit } from "lucide-react";
+import { Search, Edit, Delete } from "lucide-react";
 import ObjetivoModal from "./ObjetivoModal";
+import { ObjetivoService } from "@/services/ObjetivosService";
+import { ObjetivoModel } from "@/models/objetivo-model";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const objetivosEjemplo = [
-  {
-    id: 1,
-    titulo: "Aumentar la satisfacción del cliente",
-    codigo: "OBJ-001",
-    descripcion: "Mejorar la atención y los tiempos de respuesta.",
-    responsable: "Juan Pérez",
-    procesos: "Atención al Cliente",
-    estado: "activo",
-  },
-  {
-    id: 2,
-    titulo: "Reducir costos operativos",
-    codigo: "OBJ-002",
-    descripcion: "Optimizar el uso de recursos en producción.",
-    responsable: "María García",
-    procesos: "Producción",
-    estado: "activo",
-  },
-];
-
-function ObjetivosListing2() {
-  const [objetivos, setObjetivos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [currentObjetivo, setCurrentObjetivo] = useState(null);
+function ObjetivosListing() {
+  const [objetivos, setObjetivos] = useState<ObjetivoModel[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [currentObjetivo, setCurrentObjetivo] = useState<ObjetivoModel | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setObjetivos(objetivosEjemplo);
-      setIsLoading(false);
-    }, 500);
+    const fetchObjetivos = async () => {
+      setIsLoading(true);
+      try {
+        const data = await ObjetivoService.getAll();
+        setObjetivos(data);
+      } catch (error) {
+        console.error("Error al cargar objetivos:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchObjetivos();
   }, []);
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredObjetivos = objetivos.filter(
-    (obj) =>
-      obj.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      obj.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      obj.responsable.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      obj.procesos.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredObjetivos = objetivos.filter((obj) =>
+    [obj.titulo, obj.descripcion, obj.responsable, obj.procesos_relacionados].some((field) =>
+      field?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
+
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   const handleNewObjetivo = () => {
     setCurrentObjetivo(null);
     setModalOpen(true);
   };
 
-  const handleEditObjetivo = (objetivo) => {
+  const handleEditObjetivo = (objetivo: ObjetivoModel) => {
     setCurrentObjetivo(objetivo);
     setModalOpen(true);
   };
 
-  const handleSaveObjetivo = (objetivoData) => {
+  const handleDelete = async (objetivo: ObjetivoModel) => {
+    const accepted = await confirm({
+      title: 'Eliminar objetivo',
+      message: '¿Seguro que deseas eliminar este objetivo?',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+    });
+
+    if (accepted) {
+      try {
+        const data = await ObjetivoService.delete(objetivo.id!);
+
+        if (data.success) {
+          setObjetivos(prevObjetivos => prevObjetivos.filter(item => item.id !== objetivo.id));
+
+          toast.success('Objetivo eliminado correctamente');
+
+        } else {
+          toast.error('Error al eliminar el objetivo');
+        }
+      } catch (error) {
+        toast.error('Hubo un error al eliminar el objetivo');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleSaveObjetivo = (objetivoData: Omit<ObjetivoModel, "id" | "estado">) => {
     if (currentObjetivo) {
-      // Editar objetivo existente
-      setObjetivos(
-        objetivos.map((obj) =>
+      setObjetivos((prev) =>
+        prev.map((obj) =>
           obj.id === currentObjetivo.id ? { ...obj, ...objetivoData } : obj
         )
       );
     } else {
-      // Crear nuevo objetivo
-      const newObjetivo = {
-        ...objetivoData,
-        id: Date.now(),
-        estado: "activo",
-      };
-      setObjetivos([...objetivos, newObjetivo]);
+      setObjetivos((prev) => [...prev, objetivoData]);
     }
     setModalOpen(false);
   };
 
   return (
     <div className="p-8">
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Objetivos de Calidad</h2>
         <Button onClick={handleNewObjetivo}>+ Nuevo Objetivo</Button>
       </div>
+
       <div className="mb-6">
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -98,6 +113,7 @@ function ObjetivosListing2() {
           />
         </div>
       </div>
+
       <div>
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
@@ -116,7 +132,9 @@ function ObjetivosListing2() {
                     <p className="text-sm text-muted-foreground mt-1">
                       {obj.descripcion}
                     </p>
+
                     <div className="grid grid-cols-2 gap-4 mt-4">
+
                       <div>
                         <p className="text-sm">
                           <b>Código:</b> {obj.codigo}
@@ -125,15 +143,15 @@ function ObjetivosListing2() {
                           <b>Responsable:</b> {obj.responsable}
                         </p>
                       </div>
+
                       <div>
                         <p className="text-sm">
-                          <b>Procesos:</b> {obj.procesos}
-                        </p>
-                        <p className="text-sm">
-                          <b>Estado:</b> {obj.estado}
+                          <b>Procesos:</b> {obj.procesos_relacionados}
                         </p>
                       </div>
+
                     </div>
+
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -143,6 +161,15 @@ function ObjetivosListing2() {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(obj)}
+                    >
+                      <Delete className="h-4 w-4" />
+                    </Button>
+                    {ConfirmDialog}
                   </div>
                 </div>
               </div>
@@ -162,8 +189,9 @@ function ObjetivosListing2() {
         onSave={handleSaveObjetivo}
         objetivo={currentObjetivo}
       />
+
     </div>
   );
 }
 
-export default ObjetivosListing2;
+export default ObjetivosListing;

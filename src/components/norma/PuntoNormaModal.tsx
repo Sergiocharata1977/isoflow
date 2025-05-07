@@ -1,20 +1,33 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
 
-function PuntoNormaModal({ isOpen, onClose, onSave, punto }) {
-  const [formData, setFormData] = useState({
+// Tipo para un punto de norma
+interface Punto {
+  titulo: string;
+  norma: string;
+  explicacion: string;
+}
+
+// Props del componente
+interface PuntoNormaModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (punto: Punto) => void;
+  punto?: Punto | null;
+}
+
+const PuntoNormaModal: React.FC<PuntoNormaModalProps> = ({ isOpen, onClose, onSave, punto }) => {
+  const [formData, setFormData] = useState<Punto>({
     titulo: "",
     norma: "",
     explicacion: ""
@@ -32,14 +45,19 @@ function PuntoNormaModal({ isOpen, onClose, onSave, punto }) {
     }
   }, [punto]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {punto ? "Editar Punto de la Norma" : "Nuevo Punto de la Norma"}
@@ -92,6 +110,6 @@ function PuntoNormaModal({ isOpen, onClose, onSave, punto }) {
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default PuntoNormaModal;

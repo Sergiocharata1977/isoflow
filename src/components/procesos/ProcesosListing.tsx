@@ -19,19 +19,22 @@ import {
 import ProcesoModal from "./ProcesoModal";
 import ProcesoSingle from "./ProcesoSingle";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { ProcesoModel } from "@/models/proceso-model";
+import { ProcesosService } from "@/services/ProcesosService";
+
 
 function ProcesosListing() {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProceso, setSelectedProceso] = useState(null);
+  const [selectedProceso, setSelectedProceso] = useState<ProcesoModel | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSingle, setShowSingle] = useState(false);
-  const [currentProceso, setCurrentProceso] = useState(null);
+  const [currentProceso, setCurrentProceso] = useState<ProcesoModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [procesoToDelete, setProcesoToDelete] = useState(null);
-  const [procesos, setProcesos] = useState([]);
+  const [procesoToDelete, setProcesoToDelete] = useState<ProcesoModel | null>(null);
+  const [procesos, setProcesos] = useState<ProcesoModel[]>([]);
 
   useEffect(() => {
     loadProcesos();
@@ -40,8 +43,7 @@ function ProcesosListing() {
   const loadProcesos = async () => {
     try {
       setIsLoading(true);
-      const saved = localStorage.getItem("procesos");
-      const data = saved ? JSON.parse(saved) : [];
+      const data = await ProcesosService.getAll();
       setProcesos(data);
     } catch (error) {
       console.error("Error loading procesos:", error);
@@ -55,26 +57,28 @@ function ProcesosListing() {
     }
   };
 
-  const handleSave = async (procesoData) => {
+  const handleSave = async (procesoData: Omit<ProcesoModel, "id" | "created_at" | "updated_at">) => {
     try {
-      let updatedProcesos;
       if (selectedProceso) {
-        updatedProcesos = procesos.map(p => 
-          p.id === selectedProceso.id ? { ...procesoData, id: selectedProceso.id } : p
-        );
-        toast({
-          title: "Proceso actualizado",
-          description: "Los datos del proceso han sido actualizados exitosamente"
-        });
+        // Actualizar proceso existente
+        const updatedProceso = await ProcesosService.update(selectedProceso.id!, procesoData);
+        if (updatedProceso) {
+          setProcesos(procesos.map(p => 
+            p.id === updatedProceso.id ? updatedProceso : p
+          ));
+          toast({
+            title: "Proceso actualizado",
+            description: "Los datos del proceso han sido actualizados exitosamente"
+          });
+        }
       } else {
-        updatedProcesos = [...procesos, { ...procesoData, id: Date.now() }];
+        const newProceso = await ProcesosService.create(procesoData);
+        setProcesos([...procesos, newProceso]); 
         toast({
           title: "Proceso creado",
           description: "Se ha agregado un nuevo proceso exitosamente"
         });
       }
-      setProcesos(updatedProcesos);
-      localStorage.setItem("procesos", JSON.stringify(updatedProcesos));
       setIsModalOpen(false);
       setSelectedProceso(null);
     } catch (error) {
@@ -87,31 +91,35 @@ function ProcesosListing() {
     }
   };
 
-  const handleEdit = (proceso) => {
+  const handleEdit = (proceso: ProcesoModel) => {
     setSelectedProceso(proceso);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     const procesoToDelete = procesos.find(p => p.id === id);
-    setProcesoToDelete(procesoToDelete);
-    setDeleteDialogOpen(true);
+    if (procesoToDelete) {
+      setProcesoToDelete(procesoToDelete);
+      setDeleteDialogOpen(true);
+    }
   };
 
-  const confirmDelete = () => {
-    if (!procesoToDelete) return;
+  const confirmDelete = async () => {
+    if (!procesoToDelete?.id) return;
     
     try {
-      const updatedProcesos = procesos.filter(p => p.id !== procesoToDelete.id);
-      setProcesos(updatedProcesos);
-      localStorage.setItem("procesos", JSON.stringify(updatedProcesos));
-      toast({
-        title: "Proceso eliminado",
-        description: "El proceso ha sido eliminado exitosamente"
-      });
-      
-      if (showSingle) {
-        setShowSingle(false);
+      const success = await ProcesosService.delete(procesoToDelete.id);
+      if (success) {
+        const updatedProcesos = procesos.filter(p => p.id !== procesoToDelete.id);
+        setProcesos(updatedProcesos);
+        toast({
+          title: "Proceso eliminado",
+          description: "El proceso ha sido eliminado exitosamente"
+        });
+        
+        if (showSingle) {
+          setShowSingle(false);
+        }
       }
     } catch (error) {
       console.error("Error deleting proceso:", error);
@@ -126,7 +134,7 @@ function ProcesosListing() {
     }
   };
 
-  const handleViewProceso = (proceso) => {
+  const handleViewProceso = (proceso: ProcesoModel) => {
     setCurrentProceso(proceso);
     setShowSingle(true);
   };
@@ -135,6 +143,7 @@ function ProcesosListing() {
     proceso.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     proceso.objetivo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   if (showSingle) {
     return (
@@ -150,7 +159,7 @@ function ProcesosListing() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-primary"></div>
       </div>
     );
   }
@@ -158,21 +167,21 @@ function ProcesosListing() {
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
+      <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+        <div className="flex items-center w-full space-x-2 sm:w-auto">
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             size="icon"
             onClick={() => setViewMode("grid")}
           >
-            <LayoutGrid className="h-4 w-4" />
+            <LayoutGrid className="w-4 h-4" />
           </Button>
           <Button
             variant={viewMode === "list" ? "secondary" : "ghost"}
             size="icon"
             onClick={() => setViewMode("list")}
           >
-            <ListIcon className="h-4 w-4" />
+            <ListIcon className="w-4 h-4" />
           </Button>
           <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -185,13 +194,13 @@ function ProcesosListing() {
             />
           </div>
         </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+        <div className="flex items-center justify-end w-full space-x-2 sm:w-auto">
           <Button variant="outline" onClick={() => {}}>
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
           <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="w-4 h-4 mr-2" />
             Nuevo Proceso
           </Button>
         </div>
@@ -204,20 +213,20 @@ function ProcesosListing() {
         exit={{ opacity: 0 }}
       >
         {viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredProcesos.map((proceso) => (
               <motion.div
                 key={proceso.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
+                className="overflow-hidden transition-colors border rounded-lg cursor-pointer bg-card border-border hover:border-primary"
                 onClick={() => handleViewProceso(proceso)}
               >
                 <div className="p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="bg-primary/10 p-2 rounded-lg">
-                      <FileText className="h-5 w-5 text-primary" />
+                  <div className="flex items-center mb-4 space-x-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold">{proceso.titulo}</h3>
@@ -226,12 +235,12 @@ function ProcesosListing() {
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
                     {proceso.objetivo}
                   </p>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      proceso.estado === "activo" 
+                      proceso.estado === "Activo" 
                         ? "bg-green-100 text-green-800"
                         : proceso.estado === "revision"
                         ? "bg-yellow-100 text-yellow-800"
@@ -248,17 +257,17 @@ function ProcesosListing() {
                           handleEdit(proceso);
                         }}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(proceso.id);
+                          if (proceso.id !== undefined) handleDelete(proceso.id);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -267,15 +276,15 @@ function ProcesosListing() {
             ))}
           </div>
         ) : (
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="overflow-hidden border rounded-lg bg-card border-border">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted">
-                  <th className="text-left p-4">Proceso</th>
-                  <th className="text-left p-4">Objetivo</th>
-                  <th className="text-left p-4">Versión</th>
-                  <th className="text-left p-4">Estado</th>
-                  <th className="text-right p-4">Acciones</th>
+                  <th className="p-4 text-left">Proceso</th>
+                  <th className="p-4 text-left">Objetivo</th>
+                  <th className="p-4 text-left">Versión</th>
+                  <th className="p-4 text-left">Estado</th>
+                  <th className="p-4 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -284,15 +293,15 @@ function ProcesosListing() {
                     key={proceso.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="border-b border-border cursor-pointer hover:bg-accent/50"
+                    className="border-b cursor-pointer border-border hover:bg-accent/50"
                     onClick={() => handleViewProceso(proceso)}
                   >
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <FileText className="h-5 w-5 text-primary" />
+                        <FileText className="w-5 h-5 text-primary" />
                         <div className="flex items-center space-x-2">
                           <span className="font-medium">{proceso.titulo}</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
                       </div>
                     </td>
@@ -300,7 +309,7 @@ function ProcesosListing() {
                       <p className="text-sm line-clamp-2">{proceso.objetivo}</p>
                     </td>
                     <td className="p-4">
-                      <span className="text-sm px-2 py-1 bg-primary/10 rounded-full text-primary">
+                      <span className="px-2 py-1 text-sm rounded-full bg-primary/10 text-primary">
                         v{proceso.version}
                       </span>
                     </td>
@@ -324,17 +333,17 @@ function ProcesosListing() {
                           handleEdit(proceso);
                         }}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(proceso.id);
+                          if (proceso.id !== undefined) handleDelete(proceso.id);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </td>
                   </motion.tr>
@@ -342,8 +351,8 @@ function ProcesosListing() {
               </tbody>
             </table>
             {filteredProcesos.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <div className="py-12 text-center">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
                 <p className="mt-4 text-muted-foreground">
                   No hay procesos registrados. Haz clic en "Nuevo Proceso" para comenzar.
                 </p>
@@ -360,6 +369,7 @@ function ProcesosListing() {
           setSelectedProceso(null);
         }}
         onSave={handleSave}
+        onSaveSuccess={loadProcesos}
         proceso={selectedProceso}
       />
 

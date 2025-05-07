@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { 
+import {
   Plus,
   Search,
   Download,
@@ -13,21 +12,32 @@ import {
 } from "lucide-react";
 import CapacitacionModal from "./CapacitacionModal";
 
+// Definimos el tipo de datos para una capacitación
+interface Capacitacion {
+  id: number;
+  titulo: string;
+  instructor: string;
+  fecha: string;
+  duracion: string;
+  descripcion: string;
+}
+
 function CapacitacionesListing() {
   const { toast } = useToast();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCapacitacion, setSelectedCapacitacion] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedCapacitacion, setSelectedCapacitacion] = useState<Capacitacion | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [capacitaciones, setCapacitaciones] = useState(() => {
+  const [capacitaciones, setCapacitaciones] = useState<Capacitacion[]>(() => {
     const saved = localStorage.getItem("capacitaciones");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? (JSON.parse(saved) as Capacitacion[]) : [];
   });
 
-  const handleSave = (capacitacionData) => {
-    let updatedCapacitaciones;
+  const handleSave = (capacitacionData: Omit<Capacitacion, "id">) => {
+    let updatedCapacitaciones: Capacitacion[];
+
     if (selectedCapacitacion) {
-      updatedCapacitaciones = capacitaciones.map(c => 
+      updatedCapacitaciones = capacitaciones.map(c =>
         c.id === selectedCapacitacion.id ? { ...capacitacionData, id: selectedCapacitacion.id } : c
       );
       toast({
@@ -35,24 +45,28 @@ function CapacitacionesListing() {
         description: "Los datos de la capacitación han sido actualizados exitosamente"
       });
     } else {
-      updatedCapacitaciones = [...capacitaciones, { ...capacitacionData, id: Date.now() }];
+      updatedCapacitaciones = [
+        ...capacitaciones,
+        { ...capacitacionData, id: Date.now() }
+      ];
       toast({
         title: "Capacitación creada",
         description: "Se ha agregado una nueva capacitación exitosamente"
       });
     }
+
     setCapacitaciones(updatedCapacitaciones);
     localStorage.setItem("capacitaciones", JSON.stringify(updatedCapacitaciones));
     setIsModalOpen(false);
     setSelectedCapacitacion(null);
   };
 
-  const handleEdit = (capacitacion) => {
+  const handleEdit = (capacitacion: Capacitacion) => {
     setSelectedCapacitacion(capacitacion);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     const updatedCapacitaciones = capacitaciones.filter(c => c.id !== id);
     setCapacitaciones(updatedCapacitaciones);
     localStorage.setItem("capacitaciones", JSON.stringify(updatedCapacitaciones));
@@ -84,7 +98,7 @@ function CapacitacionesListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
