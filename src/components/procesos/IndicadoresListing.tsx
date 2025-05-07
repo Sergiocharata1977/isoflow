@@ -1,117 +1,145 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  Plus, 
-  Search, 
-  Download, 
-  Pencil, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Download,
+  Pencil,
+  Trash2,
   BarChart2,
   LayoutGrid,
   List,
-  ChevronRight
 } from "lucide-react";
 import IndicadorModal from "./IndicadorModal";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { IndicadorModel } from "@/models/indicador-model";
+import { IndicadoresService } from "@/services/IndicadoresService";
 
-const IndicadorCard = React.memo(({ indicador, onView, onEdit, onDelete }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
-    onClick={() => onView(indicador)}
-  >
-    <div className="p-6">
-      <div className="flex items-center space-x-3 mb-4">
-        <div className="bg-primary/10 p-2 rounded-lg">
-          <BarChart2 className="h-5 w-5 text-primary" />
+interface IndicadorCardProps {
+  indicador: IndicadorModel;
+  onView: (indicador: IndicadorModel) => void;
+  onEdit: (indicador: IndicadorModel) => void;
+  onDelete: (id: number) => void;
+}
+
+const IndicadorCard: React.FC<IndicadorCardProps> = React.memo(
+  ({ indicador, onView, onEdit, onDelete }) => (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
+      onClick={() => onView(indicador)}
+    >
+      <div className="p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="bg-primary/10 p-2 rounded-lg">
+            <BarChart2 className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="font-semibold truncate">{indicador.titulo}</h3>
         </div>
-        <h3 className="font-semibold truncate">{indicador.titulo}</h3>
-      </div>
-      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{indicador.descripcion}</p>
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-muted-foreground">{indicador.unidad_medida}</span>
-        <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(indicador);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(indicador.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+          {indicador.descripcion}
+        </p>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">
+            {indicador.unidad_medida}
+          </span>
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(indicador);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(indicador.id!);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  </motion.div>
-));
+    </motion.div>
+  )
+);
 
 function IndicadoresListing() {
   const { toast } = useToast();
-  const [viewMode, setViewMode] = useState("grid");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedIndicador, setSelectedIndicador] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [indicadorToDelete, setIndicadorToDelete] = useState(null);
-  const [indicadores, setIndicadores] = useState([]);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedIndicador, setSelectedIndicador] = useState<IndicadorModel | null>(
+    null
+  );
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [indicadorToDelete, setIndicadorToDelete] = useState<IndicadorModel | null>(
+    null
+  );
+  const [indicadores, setIndicadores] = useState<IndicadorModel[]>([]);
 
   useEffect(() => {
     loadIndicadores();
   }, []);
 
   const loadIndicadores = async () => {
-    try {
+
+    const fetchIndicadores = async () => {
       setIsLoading(true);
-      const saved = localStorage.getItem("indicadores");
-      const data = saved ? JSON.parse(saved) : [];
-      setIndicadores(data);
-    } catch (error) {
-      console.error("Error loading indicadores:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los indicadores",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+      try {
+        const data = await IndicadoresService.getAll();
+        setIndicadores(data);
+      } catch (error) {
+        console.error("Error al cargar indicadores:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchIndicadores();
   };
 
-  const handleSave = async (indicadorData) => {
+  const handleSave = async (indicadorData: Omit<IndicadorModel, 'id'>) => {
     try {
-      let updatedIndicadores;
+      let updatedIndicadores: IndicadorModel[];
       if (selectedIndicador) {
-        updatedIndicadores = indicadores.map(i => 
-          i.id === selectedIndicador.id ? { ...indicadorData, id: selectedIndicador.id } : i
+        updatedIndicadores = indicadores.map((i) =>
+          i.id === selectedIndicador.id
+            ? { ...indicadorData, id: selectedIndicador.id }
+            : i
         );
         toast({
           title: "Indicador actualizado",
-          description: "Los datos del indicador han sido actualizados exitosamente"
+          description: "Los datos del indicador han sido actualizados exitosamente",
         });
       } else {
-        updatedIndicadores = [...indicadores, { ...indicadorData, id: Date.now() }];
+        const newId = Date.now();
+        updatedIndicadores = [...indicadores, { ...indicadorData, id: newId }];
         toast({
           title: "Indicador creado",
-          description: "Se ha agregado un nuevo indicador exitosamente"
+          description: "Se ha agregado un nuevo indicador exitosamente",
         });
       }
       setIndicadores(updatedIndicadores);
@@ -123,39 +151,41 @@ function IndicadoresListing() {
       toast({
         title: "Error",
         description: "No se pudo guardar el indicador",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const handleEdit = (indicador) => {
+  const handleEdit = (indicador: IndicadorModel) => {
     setSelectedIndicador(indicador);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    const indicadorToDelete = indicadores.find(i => i.id === id);
-    setIndicadorToDelete(indicadorToDelete);
+  const handleDelete = (id: number) => {
+    const indicadorToDelete = indicadores.find((i) => i.id === id);
+    setIndicadorToDelete(indicadorToDelete ?? null);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
     if (!indicadorToDelete) return;
-    
+
     try {
-      const updatedIndicadores = indicadores.filter(i => i.id !== indicadorToDelete.id);
+      const updatedIndicadores = indicadores.filter(
+        (i) => i.id !== indicadorToDelete.id
+      );
       setIndicadores(updatedIndicadores);
       localStorage.setItem("indicadores", JSON.stringify(updatedIndicadores));
       toast({
         title: "Indicador eliminado",
-        description: "El indicador ha sido eliminado exitosamente"
+        description: "El indicador ha sido eliminado exitosamente",
       });
     } catch (error) {
       console.error("Error deleting indicador:", error);
       toast({
         title: "Error",
         description: "No se pudo eliminar el indicador",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setDeleteDialogOpen(false);
@@ -163,7 +193,7 @@ function IndicadoresListing() {
     }
   };
 
-  const filteredIndicadores = indicadores.filter(indicador =>
+  const filteredIndicadores = indicadores.filter((indicador) =>
     indicador.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     indicador.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -207,7 +237,7 @@ function IndicadoresListing() {
           </div>
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -219,11 +249,7 @@ function IndicadoresListing() {
       </div>
 
       {/* Content */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIndicadores.map((indicador) => (
@@ -232,6 +258,7 @@ function IndicadoresListing() {
                 indicador={indicador}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onView={() => { }} // Add a dummy onView function if it's required by IndicadorCardProps
               />
             ))}
           </div>
@@ -263,7 +290,9 @@ function IndicadoresListing() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm line-clamp-2">{indicador.descripcion}</p>
+                      <p className="text-sm line-clamp-2">
+                        {indicador.descripcion}
+                      </p>
                     </td>
                     <td className="p-4">{indicador.unidad_medida}</td>
                     <td className="p-4">{indicador.limite_aceptacion}</td>
@@ -278,7 +307,7 @@ function IndicadoresListing() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(indicador.id)}
+                        onClick={() => handleDelete(indicador.id!)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -291,7 +320,8 @@ function IndicadoresListing() {
               <div className="text-center py-12">
                 <BarChart2 className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-4 text-muted-foreground">
-                  No hay indicadores registrados. Haz clic en "Nuevo Indicador" para comenzar.
+                  No hay indicadores registrados. Haz clic en "Nuevo Indicador"
+                  para comenzar.
                 </p>
               </div>
             )}
@@ -315,7 +345,8 @@ function IndicadoresListing() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el indicador {indicadorToDelete?.titulo}.
+              Esta acción no se puede deshacer. Se eliminará permanentemente el
+              indicador {indicadorToDelete?.titulo}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
