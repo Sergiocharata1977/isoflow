@@ -1,39 +1,94 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { LineChart } from "lucide-react";
+import { LineChart, Pencil, Trash2 } from "lucide-react";
 import { MedicionModel } from "@/models/medicion-model";
 import MedicionModal from "./MedicionModal";
+import { MedicionesService } from "@/services/MedicionesService";
+import { medicionesService } from "@/services/mediciones";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 function MedicionesListing(): JSX.Element {
   const [mediciones, setMediciones] = useState<MedicionModel[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedMedicion, setSelectedMedicion] = useState<MedicionModel | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setMediciones([]);
-      setIsLoading(false);
-    }, 500);
+    loadMediciones();
   }, []);
+
+  const loadMediciones = async () => {
+
+    const fetchMediciones = async () => {
+      setIsLoading(true);
+      try {
+        const data = await MedicionesService.getAll();
+        setMediciones(data);
+      } catch (error) {
+        console.error("Error al cargar las mediciones:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMediciones();
+  };
+
+  const handleEdit = (medicion: MedicionModel) => {
+    setSelectedMedicion(medicion);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (medicion: MedicionModel) => {
+    const accepted = await confirm({
+      title: 'Eliminar medición',
+      message: '¿Seguro que deseas eliminar esta medición?',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+    });
+
+    if (accepted) {
+      try {
+        await MedicionesService.delete(medicion.id!);
+
+        setMediciones(prev =>
+          prev.filter(a => a.id !== medicion.id)
+        );
+
+        // toast({
+        //   title: "medicion eliminado",
+        //   description: "El medicion se ha sido eliminado exitosamente"
+        // });
+
+      } catch (error) {
+        // toast({
+        //   title: "Error",
+        //   description: "No se pudo eliminar el medicion",
+        //   variant: "destructive"
+        // });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const handleSave = async (medicionData: MedicionModel) => {
     try {
       if (selectedMedicion) {
-        // const updatedIndicador = await IndicadoresService.update(medicionData.id!, medicionData);
-        // const updatedIndicadors = mediciones.map(a =>
-        //   a.id === selectedMedicion.id ? updatedIndicador : a
-        // );
-        // setMediciones(updatedIndicadors);
+        const updatedIndicador = await MedicionesService.update(medicionData.id!, medicionData);
+        const updatedIndicadors = mediciones.map(a =>
+          a.id === selectedMedicion.id ? updatedIndicador : a
+        );
+        setMediciones(updatedIndicadors);
         // toast({
         //   title: "Indicador actualizado",
         //   description: "Los datos del indicador han sido actualizados exitosamente",
         // });
       } else {
-        // const createdIndicadores = await IndicadoresService.create(medicionData);
-        // setMediciones([createdIndicadores, ...mediciones]);
+        const createdIndicadores = await MedicionesService.create(medicionData);
+        setMediciones([createdIndicadores, ...mediciones]);
         // toast({
         //   title: "Indicador creado",
         //   description: "Se ha agregado un nuevo indicador exitosamente",
@@ -92,10 +147,30 @@ function MedicionesListing(): JSX.Element {
               {/* <span className="inline-block bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs capitalize">
                 {med.estado}
               </span> */}
+
+              <td className="p-4 text-right">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleEdit(med)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(med)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </td>
             </div>
           ))}
         </div>
       )}
+
+
+      {ConfirmDialog}
 
       <MedicionModal
         isOpen={isModalOpen}

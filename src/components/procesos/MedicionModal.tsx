@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState, useEffect, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,10 +10,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
 
-function MedicionModal({ isOpen, onClose, onSave, medicion }) {
-  const [formData, setFormData] = useState({
+// Define el tipo para los datos del formulario
+interface FormData {
+  titulo: string;
+  medicion: string;
+  comentarios: string;
+}
+
+// Define los props del componente
+interface MedicionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: FormData) => void;
+  medicion?: FormData | null;
+}
+
+function MedicionModal({ isOpen, onClose, onSave, medicion }: MedicionModalProps): JSX.Element {
+  const [formData, setFormData] = useState<FormData>({
     titulo: "",
     medicion: "",
     comentarios: ""
@@ -32,7 +45,7 @@ function MedicionModal({ isOpen, onClose, onSave, medicion }) {
     }
   }, [medicion]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave(formData);
   };
