@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useToast } from "@/components/ui/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { usePagination } from "@/hooks/use-pagination";
 import { PersonalService } from "@/services/personal-service";
@@ -10,6 +9,8 @@ import { PersonalListView } from "./PersonalListView";
 import { PaginationControls } from "./PaginationControls";
 import PersonalModal from "./PersonalModal";
 import PersonalSingle from "./PersonalSingle";
+import { toast } from "sonner";
+
 import {
   AlertDialog,
   AlertDialogContent,
@@ -24,7 +25,6 @@ import { Skeleton } from "../ui/skeleton";
 import { User } from "@/types/user";
 
 function PersonalListing() {
-  const { toast } = useToast();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -47,11 +47,7 @@ function PersonalListing() {
       setUsers(usersData);
     } catch (error) {
       console.error("Error loading users:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo cargar la lista de usuarios",
-        variant: "destructive",
-      });
+      toast.error("Error loading users");
     } finally {
       setIsLoading(false);
     }
@@ -82,19 +78,12 @@ function PersonalListing() {
     setIsLoading(true);
     try {
       await loadUsers();
-      toast({
-        title: "Operación exitosa",
-        description: selectedUser ? "Usuario actualizado" : "Usuario creado",
-      });
+      toast.success("Usuario guardado exitosamente");
       setIsModalOpen(false);
       setSelectedUser(null);
     } catch (error) {
       console.error("Error saving user:", error);
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al guardar los datos",
-        variant: "destructive",
-      });
+      toast.error("Error saving user");
     } finally {
       setIsLoading(false);
     }
@@ -117,21 +106,14 @@ function PersonalListing() {
     try {
       await PersonalService.deletePersonal(userToDelete.id);
       await loadUsers();
-      toast({
-        title: "Usuario eliminado",
-        description: "El usuario ha sido eliminado exitosamente",
-      });
+      toast.error("Usuario eliminado exitosamente");
 
       if (showSingle) {
         setShowSingle(false);
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el usuario",
-        variant: "destructive",
-      });
+      toast.error("Error deleting user");
     } finally {
       setDeleteDialogOpen(false);
       setUserToDelete(null);

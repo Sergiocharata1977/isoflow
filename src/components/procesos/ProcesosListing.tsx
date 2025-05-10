@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
   Plus, 
   Search, 
@@ -21,6 +20,8 @@ import ProcesoSingle from "./ProcesoSingle";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { ProcesoModel } from "@/models/proceso-model";
 import { ProcesosService } from "@/services/ProcesosService";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import ProcesosPDFDocument from "./ProcesosPDFDocument";
 
 
 function ProcesosListing() {
@@ -195,9 +196,19 @@ function ProcesosListing() {
           </div>
         </div>
         <div className="flex items-center justify-end w-full space-x-2 sm:w-auto">
-          <Button variant="outline" onClick={() => {}}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+        <Button variant="outline" asChild>
+            <PDFDownloadLink
+              document={<ProcesosPDFDocument procesos={filteredProcesos} />} 
+              fileName="procesos.pdf"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              {({ loading }) => (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  {loading ? 'Generando PDF...' : 'Exportar PDF'}
+                </>
+              )}
+            </PDFDownloadLink>
           </Button>
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
