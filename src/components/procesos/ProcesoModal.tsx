@@ -53,7 +53,6 @@ function ProcesoModal({ isOpen, onClose, onSaveSuccess, proceso, onSave }: Proce
         estado: proceso.estado || "Activo",
       });
     } else {
-      // Resetear a valores iniciales cuando no hay proceso (nuevo proceso)
       setFormData({
         titulo: "",
         codigo: "",
@@ -68,7 +67,7 @@ function ProcesoModal({ isOpen, onClose, onSaveSuccess, proceso, onSave }: Proce
         estado: "Activo",
       });
     }
-  }, [proceso, isOpen]); // Añadido isOpen como dependencia para resetear cuando se abre el modal
+  }, [proceso, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
