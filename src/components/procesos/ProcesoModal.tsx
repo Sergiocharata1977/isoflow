@@ -20,7 +20,6 @@ interface ProcesoModalProps {
   onSaveSuccess: () => void; 
   proceso?: ProcesoModel | null;
   onSave: (procesoData: Omit<ProcesoModel, "id" | "created_at" | "updated_at">) => Promise<void>;
-
 }
 
 function ProcesoModal({ isOpen, onClose, onSaveSuccess, proceso, onSave }: ProcesoModalProps) {
@@ -35,7 +34,7 @@ function ProcesoModal({ isOpen, onClose, onSaveSuccess, proceso, onSave }: Proce
     entradas: "",
     salidas: "",
     indicadores_relacionados: "",
-    estado: "activo",
+    estado: "Activo", 
   });
 
   useEffect(() => {
@@ -51,10 +50,10 @@ function ProcesoModal({ isOpen, onClose, onSaveSuccess, proceso, onSave }: Proce
         entradas: proceso.entradas || "",
         salidas: proceso.salidas || "",
         indicadores_relacionados: proceso.indicadores_relacionados || "",
-        estado: proceso.estado || "activo",
+        estado: proceso.estado || "Activo",
       });
     } else {
-      // Resetear formulario si es nuevo
+      // Resetear a valores iniciales cuando no hay proceso (nuevo proceso)
       setFormData({
         titulo: "",
         codigo: "",
@@ -66,18 +65,20 @@ function ProcesoModal({ isOpen, onClose, onSaveSuccess, proceso, onSave }: Proce
         entradas: "",
         salidas: "",
         indicadores_relacionados: "",
-        estado: "activo",
+        estado: "Activo",
       });
     }
-  }, [proceso]);
+  }, [proceso, isOpen]); // Añadido isOpen como dependencia para resetear cuando se abre el modal
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await onSave(formData); 
       onClose();
+      onSaveSuccess()
     } catch (error) {
       console.error("Error al guardar el proceso:", error);
+      toast.error("Error al guardar el proceso");
     }
   };
 
